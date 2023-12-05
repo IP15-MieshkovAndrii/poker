@@ -1,17 +1,14 @@
 <template>
-  <LobbyView/>
+
+  <router-view></router-view>
+
 </template>
 
 <script>
-import LobbyView from './views/LobbyView.vue';
 import 'normalize.css';
-
 
 export default {
   name: 'App',
-  components: {
-    LobbyView
-  }
 }
 </script>
 

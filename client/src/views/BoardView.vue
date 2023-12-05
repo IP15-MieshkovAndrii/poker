@@ -1,13 +1,12 @@
 <template>
     <div class="board">
-      <h1>Room {{ roomId }}</h1>
+      <h1>Room </h1>
     </div>
   </template>
   
   <script>
   export default {
     name: 'BoardView',
-    props: ['roomId'],
   };
   </script>
   

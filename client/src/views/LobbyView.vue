@@ -32,6 +32,7 @@
   
   <script>
   import * as api from '../apiClient';
+
   export default {
     name: 'LobbyView',
     data() {
@@ -51,7 +52,9 @@
             hostName: this.nickname,
             password: this.password
           });
-          console.log(response)
+          if(response.status === 201){
+            this.$router.push({ name: 'BoardView'});
+          }
   
         } catch (error) {
           console.error('Error creating room:', error);
