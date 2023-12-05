@@ -3,7 +3,9 @@
 </template>
 
 <script>
-import LobbyView from './views/LobbyView.vue'
+import LobbyView from './views/LobbyView.vue';
+import 'normalize.css';
+
 
 export default {
   name: 'App',
