@@ -11,12 +11,21 @@
         <button>CALL</button>
         <button>RAISE</button>
       </div>
+      <div class="token">
+        Share room id: 
+        {{ token }}
+      </div>
     </div>
   </template>
   
   <script>
   export default {
     name: 'BoardView',
+    data() {
+        return {
+          token: this.$route.params.token || '',
+        };
+    },
   };
   </script>
   
@@ -63,6 +72,16 @@
   }
   .userPanel button:hover, .userPanel button:active {
     background-color: #cdbb31;
-}
+  }
+  .token {
+    position: fixed;
+    top: 5%;
+    right: 5%;
+    background-color: #fff;
+    width: 50vw;
+    min-height: 5vh;
+    padding: 1em;
+    word-wrap: break-word;
+  }
   </style>
   

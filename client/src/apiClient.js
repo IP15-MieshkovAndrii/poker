@@ -14,4 +14,17 @@ export const createRoom = async (data) => {
         console.error('Error',error);
     }
 
-  };
+};
+
+export const getRoom = async (data) => {
+    try {
+        console.log('Hello')
+        const response = await axiosInstance.post('/rooms/data', {
+              roomID: data.roomID,
+        });
+        return response;
+    } catch (error) {
+        console.error('Error',error);
+    }
+
+};

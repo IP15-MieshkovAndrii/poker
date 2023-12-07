@@ -45,7 +45,6 @@
             hostName: this.nickname,
           });
           if(response.status === 201){
-            console.log(response.data)
             this.$router.push({ name: 'BoardView', params: { token: response.data.token } });
           }
   
@@ -58,7 +57,17 @@
 
 
       async joinRoom() {
-        console.log('Joining room:', this.roomID, this.nickname);
+        try {
+          const response = await api.getRoom({
+              roomID: this.roomID,
+            });
+          if(response.status === 200){
+            this.$router.push({ name: 'BoardView', params: { token: this.roomID } });
+          }
+  
+        } catch (error) {
+          console.error('Error creating room:', error);
+        }
 
       },
     },
