@@ -9,21 +9,16 @@
       </form>
   
       <form>
-        <label for="roomName">Room:</label>
-        <input v-model="roomName" type="text" required placeholder="Enter room name" />
-      </form>
-
-      <form>
-        <label for="password">Password:</label>
-        <input v-model="password" type="text" required placeholder="Enter password" />
+        <label for="roomID">Room ID:</label>
+        <input v-model="roomID" type="text" placeholder="Enter room name" />
       </form>
 
       <div class="inputGroup">
         <form @submit.prevent="joinRoom">
-          <button type="submit" :disabled="(nickname === '')||(roomName === '')||(password === '')">Join Game</button>
+          <button type="submit" :disabled="(nickname === '')||(roomID === '')">Join Game</button>
         </form>
         <form @submit.prevent="createRoom">
-          <button type="submit" :disabled="(nickname === '')||(roomName === '')||(password === '')">Create Game</button>
+          <button type="submit" :disabled="(nickname === '')">Create Game</button>
         </form>
       </div>
 
@@ -37,35 +32,33 @@
     name: 'LobbyView',
     data() {
       return {
-        roomName: '',
+        roomID: '',
         nickname: '',
-        password: ''
       };
     },
     methods: {
       async createRoom() {
 
-        console.log('Creating room:', this.roomName, this.nickname, this.password);
+        console.log('Creating room:', this.nickname);
         try {
           const response = await api.createRoom({
-            roomName: this.roomName,
             hostName: this.nickname,
-            password: this.password
           });
           if(response.status === 201){
-            this.$router.push({ name: 'BoardView'});
+            console.log(response.data)
+            this.$router.push({ name: 'BoardView', params: { token: response.data.token } });
           }
   
         } catch (error) {
           console.error('Error creating room:', error);
         } finally {
-          // this.roomName = '';
+          // this.roomID = '';
         }
       },
 
 
       async joinRoom() {
-        console.log('Joining room:', this.roomName, this.nickname, this.password);
+        console.log('Joining room:', this.roomID, this.nickname);
 
       },
     },
@@ -79,6 +72,7 @@
     display: flex;
     align-items: center;
     flex-direction: column;
+    margin-top: 60px;
   }
   
   form {

@@ -1,23 +1,27 @@
+const generateToken = require('../config/generateToken');
 const Room = require('../models/Room');
 
 exports.createRoom = async (req, res) => {
   try {
-    const { roomName, password, hostName } = req.body;
+    const { hostName } = req.body;
 
-    if (!roomName || !password || !hostName) {
+    if (!hostName) {
       return res.status(400).json({ error: 'All fields are required.' });
     }
 
-    const existingRoom = await Room.findOne({ $or: [{ roomName }, { roomID: generateRoomID() }] });
-
-    if (existingRoom) {
-        res.status(202).send("Such room already exist");
+    let id = generateRoomID();
+    let existingRoom = await Room.findOne({ id });
+    while (existingRoom) {
+      id = generateRoomID();
+      existingRoom = await Room.findOne({ id });
     }
 
-    const newRoom = new Room({ roomID: generateRoomID(), roomName, password, hostName });
+    const newRoom = new Room({id, hostName});
     await newRoom.save();
 
-    res.status(201).json(newRoom);
+    const token = generateToken(id);
+
+    res.status(201).json({token});
 
   } catch (error) {
 

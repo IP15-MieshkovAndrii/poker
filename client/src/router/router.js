@@ -9,7 +9,7 @@ const routes = [
     component: LobbyView,
   },
   {
-    path: '/game',
+    path: '/game/:token',
     name: 'BoardView',
     component: BoardView,
   },
