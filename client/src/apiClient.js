@@ -21,6 +21,7 @@ export const getRoom = async (data) => {
         console.log('Hello')
         const response = await axiosInstance.post('/rooms/data', {
               roomID: data.roomID,
+              nickname: data.nickname,
         });
         return response;
     } catch (error) {

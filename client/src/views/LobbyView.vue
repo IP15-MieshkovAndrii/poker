@@ -50,8 +50,6 @@
   
         } catch (error) {
           console.error('Error creating room:', error);
-        } finally {
-          // this.roomID = '';
         }
       },
 
@@ -60,6 +58,7 @@
         try {
           const response = await api.getRoom({
               roomID: this.roomID,
+              nickname: this.nickname,
             });
           if(response.status === 200){
             this.$router.push({ name: 'BoardView', params: { token: this.roomID } });

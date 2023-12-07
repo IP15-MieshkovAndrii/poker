@@ -1,5 +1,6 @@
 const generateToken = require('../config/generateToken');
 const Room = require('../models/Room');
+const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 exports.createRoom = async (req, res) => {
@@ -22,7 +23,10 @@ exports.createRoom = async (req, res) => {
 
     const token = generateToken(id);
 
-    res.status(201).json({token});
+    const newUser = new User({nickname: hostName, roomID: id});
+    await newUser.save();
+
+    res.status(201).json({token, newUser});
 
   } catch (error) {
 
@@ -34,7 +38,7 @@ exports.createRoom = async (req, res) => {
 
 exports.checkRoom = async (req, res) => {
   try {
-    const { roomID } = req.body;
+    const { roomID, nickname } = req.body;
     const token = roomID
 
     if (!token) {
@@ -43,7 +47,11 @@ exports.checkRoom = async (req, res) => {
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
 
     const existingRoom = await Room.findOne({ id: decodedToken.id });
+
     if (existingRoom) {
+      const newUser = new User({nickname, roomID: decodedToken.id});
+      await newUser.save();
+
       res.status(200).json({ message: 'Room exists' });
     } else {
       res.status(404).json({ error: 'Room not found' });
