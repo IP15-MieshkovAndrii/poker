@@ -4,6 +4,16 @@
         <div class="pot">
           POT SIZE: 0
         </div>
+        <div class="myCards">
+          <img class="card1 leftTilt" src="../assets/img/back.png">
+          <img class="card2 rightTilt" src="../assets/img/back.png">
+          <div class="myPlayer">
+            <p>
+              <span class="myName">{{ playerName }}</span><br>
+              <span class="myStack">2000</span>
+            </p>
+          </div>
+        </div>
       </div>
       <div class="userPanel">
         <button>FOLD</button>
@@ -29,11 +39,13 @@
         return {
           token: this.$route.params.token || '',
           isTokenVisible: false,
+          playerName: this?.$socket?.nickname || 'Name',
         };
     },
     methods: {
       toggleTokenVisibility() {
         this.isTokenVisible = !this.isTokenVisible;
+        console.log(this?.$socket)
       },
     },
   };
@@ -108,6 +120,40 @@
   .svg-container.clicked + .token {
     display: block;
 
+  }
+
+  .myCards{
+    position: absolute;
+    bottom: 10vh;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .myCards p{
+    font-family: theFont;
+    background-color: white;
+    margin: 0;
+    padding: 1em;
+    border-radius: 10px;
+    font-size: 20px;
+    margin-top: -1em;
+    text-transform: uppercase;
+  }
+
+  .card1, .card2{
+    width: 5.5vw;
+  }
+  .leftTilt{
+    transform: rotate(-7deg);
+  }
+
+  .rightTilt{
+      transform: rotate(7deg);
+  }
+
+  .myStack{
+    float: left;
+    margin-left: 2em;
   }
   </style>
   

@@ -61,6 +61,12 @@
               nickname: this.nickname,
             });
           if(response.status === 200){
+
+            
+            this.$socket.emit('joinRoom', {
+              room: this.roomID,
+              nickname: this.nickname,
+            });
             this.$router.push({ name: 'BoardView', params: { token: this.roomID } });
           }
   
