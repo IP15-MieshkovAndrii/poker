@@ -1,4 +1,4 @@
-const Card = require("./card.js");
+const Card = require("./Сard.js");
 const Deck = require('./Deck');
 const PokerPlayer = require('./PokerPlayer');
 
