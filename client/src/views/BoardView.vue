@@ -1,35 +1,42 @@
 <template>
     <div class="board">
+      <div class="startButtom" v-if="isHost && !gameStarted">
+        <button @click="startGame">START</button>
+      </div>
       <div class="table">
-        <div class="pot">
+        <div class="pot" v-if="gameStarted">
           POT SIZE: 0
         </div>
         <div class="myCards">
           <img class="card1 leftTilt" src="../assets/img/back.png">
           <img class="card2 rightTilt" src="../assets/img/back.png">
-          <div class="myPlayer">
+          <div class="myPlayer dealer">
+            <img class="myDealerChip" src="../assets/img/DEALER-CHIP.png">
             <p>
-              <span class="myName">{{playerName}}</span><br>
+              <span class="myName">You</span><br>
               <span class="myStack">2000</span>
             </p>
           </div>
         </div>
-        <div v-for="user in users" :key="user.nickname" class="otherPlayer">
-          <img class="card1 leftTilt" src="../assets/img/back.png">
-          <img class="card2 rightTilt" src="../assets/img/back.png">
-          <div class="otherPlayerInfo">
-            <p>
-              <span class="otherPlayerName">{{ user }}</span><br>
-              <span class="otherPlayerStack">2000</span>
-            </p>
+        <div class="players">
+          <div v-for="user in users" :key="user.nickname" class="player">
+            <img class="opponentCards leftTilt" src="../assets/img/back.png">
+            <img class="opponentCards rightTilt" src="../assets/img/back.png">
+            <div class="otherPlayerInfo">
+              <p>
+                <span class="opponentPlayerName">{{ user }}</span><br>
+                <span class="opponentStackSize">2000</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
       <div class="userPanel">
-        <button>FOLD</button>
-        <button>CHECK</button>
-        <button>CALL</button>
-        <button>RAISE</button>
+          <button>FOLD</button>
+          <button>CHECK</button>
+          <button>CALL</button>
+          <button>RAISE</button>
+
         <button class="red" @click="leaveRoom">LEAVE</button>
       </div>
       <div class="svg-container" @click="toggleTokenVisibility">
@@ -41,11 +48,11 @@
         <span>Share room id: {{ id }}</span>
       </div>
     </div>
-  </template>
+</template>
   
   <script>
-
-  // const socket = new WebSocket('ws://127.0.0.1:8000/game'); 
+  import * as api from '../apiClient';
+  import * as poker from '../scripts/poker';
 
   export default {
     name: 'BoardView',
@@ -56,6 +63,10 @@
           playerName: sessionStorage.getItem('nickname') || 'Name',
           socket: new WebSocket('ws://127.0.0.1:8000/game'),
           otherPlayers: [],
+          hostName: this.getHost() || '',
+          gameStarted: JSON.parse(localStorage.getItem('game')).gameStarted || false,
+          isHost: false,
+          allUsers: [],
         };
     },
     methods: {
@@ -70,18 +81,54 @@
       leaveRoom() {
         const leaveRoomMessage = JSON.stringify({ type: 'leaveRoom', room: this.id, nickname: this.playerName });
         this.socket.send(leaveRoomMessage);
+        this.socket.close();
         this.$router.push('/');
       },
+
       getUsers() {
         this.socket.send(JSON.stringify({ type: 'getUsersInRoom', room: this.id }));
       },
-      // handleSocketMessage(event) {
-      //   const data = JSON.parse(event.data);
-      //   if (data.type === 'usersInRoom') {
-      //     console.log('Received message:', data.users);
-      //     this.otherPlayers = data.users;
-      //   }
-      // }
+
+      handleSocketMessage(event) {
+        const data = JSON.parse(event.data);
+        if(this.id === data.id){
+          if (data.type === 'usersInRoom') {
+            const object = data.users.users
+            let array = [];
+            for (const property in object) {
+              array.push(object[property].nickname)
+            }
+            this.otherPlayers = array
+            this.allUsers = array
+          }
+          if (data.type === 'gameBegun') {
+            this.gameStarted = true;
+            poker.startGame(this.id, this.allUsers);
+          }
+        }
+      },
+
+      async getHost() {
+        try {
+          if(!this.id){this.id = this.$route.params.id}
+          const response = await api.getHost({
+            id: this.id,
+          });
+          if(response.status === 200){
+            if(this.playerName === response.data.hostname) this.isHost = true;
+            return response.data.hostname;
+
+          }
+          return ''
+
+        } catch (error) {
+          console.error('Error creating room:', error);
+        }
+      },
+
+      startGame() {
+        this.socket.send(JSON.stringify({ type: 'startGame', room: this.id }));
+      }
     },
 
     created() {
@@ -91,18 +138,10 @@
       } );
       this.socket.addEventListener('close', () => {
         console.log('Closed');
+        this.getUsers();
       });
       this.socket.addEventListener('message', (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'usersInRoom') {
-          console.log('Received message:', data.users.users);
-          const object = data.users.users
-          let array = [];
-          for (const property in object) {
-            array.push(object[property].nickname)
-          }
-          this.otherPlayers = array
-        }
+        this.handleSocketMessage(event);
       });
     },
 
@@ -134,26 +173,33 @@
   }
 
   .pot {
+    position: absolute;
     color: #fff;
     margin-top:1em;
     font-size: 2vw;
     font-weight: 600;
+    top: 50%;
+    left: 42%;
   }
   .userPanel{
     position: fixed;
-    left: 3vw;
-    top: 20%;
+    bottom: 7vh;
+    right: -2vw;
     display: flex;
-    flex-direction: column;
-    gap: 3em;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2em;
   }
 
   .userPanel button {
     background-color: #998e1c;
     border: 2px solid black;
-    width: 15vw;
+    width: 7vw;
     height: 5vh;
     cursor: pointer;
+    flex: 1 0 30%;
+    max-width: calc(30% - 2em);
   }
   .userPanel button:hover, .userPanel button:active {
     background-color: #cdbb31;
@@ -162,6 +208,7 @@
   .svg-container {
     position: relative;
     cursor: pointer;
+    height: 30px;
   }
   .token {
     position: fixed;
@@ -185,42 +232,95 @@
 
   }
 
-  .myCards{
+  .myCards {
     position: absolute;
-    bottom: 10vh;
+    bottom: 20vh;
     left: 50%;
     transform: translateX(-50%);
+    width: 11vw;
   }
-
-  .myCards p{
+  .otherPlayerInfo p{
     font-family: theFont;
     background-color: white;
     margin: 0;
     padding: 1em;
     border-radius: 10px;
+    font-size: 15px;
+    margin-top: -1em;
+    text-transform: uppercase;
+    padding-bottom: 0;
+    border: 2px solid black;
+  }
+
+  .myCards p{
+    font-family: theFont;
+    background-color: gold;
+    margin: 0;
+    padding: 1em 1em 0 1em;
+    border-radius: 10px;
     font-size: 20px;
     margin-top: -1em;
     text-transform: uppercase;
+    font-weight: 800;
+    border: 2px solid black;
   }
-
   .card1, .card2{
     width: 5.5vw;
+    background: 0;
+    display: none;
+  }
+
+  .opponentCards {
+    width: 4vw;
+    display: none;
   }
   .leftTilt{
     transform: rotate(-7deg);
   }
-
   .rightTilt{
       transform: rotate(7deg);
   }
-
-  .myStack{
-    float: left;
-    margin-left: 2em;
-  }
-
   .userPanel button.red{
     background-color: #c11212;
+  }
+
+  .userPanel button.red:hover, .userPanel button.red:active {
+    background-color: #f84545;
+  }
+  .player{
+    position: relative;
+    display: inline-block;
+    margin-top: -10em;
+    border-radius: 25px;
+    font-size: 16px;
+    font-family: theFont;
+    margin-right: 7em;
+    margin-left: 7em;
+    padding: 0;
+    width: 8vw;
+  }
+  .startButtom {
+    position: fixed;
+    top: 7vh;
+    left: 2vw;
+  }
+  .startButtom button {
+    background-color: #1c9999;
+    border: 2px solid black;
+    width: 15vw;
+    height: 7vh;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .startButtom button:hover, .startButtom button:active {
+    background-color: #6ff6f6;
+  }
+
+  .myDealerChip{
+    position:absolute;
+    display: none;
+    width: 2vw;
   }
   </style>
   

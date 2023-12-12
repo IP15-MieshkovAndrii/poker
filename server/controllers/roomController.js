@@ -61,3 +61,22 @@ exports.checkRoom = async (req, res) => {
   }
 };
 
+exports.getHost = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Token is required in the request body.' });
+    }
+
+    const room = await Room.findOne({ id });
+    res.status(200).json({ hostname: room.hostName });
+
+  } catch (error) {
+
+    console.error('Error:', error);
+    res.status(500).send('Internal Server Error');
+
+  }
+};
+

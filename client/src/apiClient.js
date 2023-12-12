@@ -30,3 +30,14 @@ export const getRoom = async (data) => {
     }
 
 };
+
+export const getHost = async (data) => {
+    try {
+        const response = await axiosInstance.post('/rooms/hostname', {
+              id: data.id,
+        });
+        return response;
+    } catch (error) {
+        console.error('Error',error);
+    }
+}

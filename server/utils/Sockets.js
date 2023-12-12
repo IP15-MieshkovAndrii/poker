@@ -6,7 +6,8 @@ class Sockets {
     joinRoom(room, nickname, ws) {
         if (!this.rooms[room]) {
             this.rooms[room] = {
-            users: [],
+                users: [],
+                game: false,
             };
         }
 
@@ -31,11 +32,12 @@ class Sockets {
             if (userIndex !== -1) {
                 this.rooms[room].users.splice(userIndex, 1);
                 console.log(`${nickname} left room ${room}`);
+                console.log(`${this.rooms[room].users.length} in room`);
             }
-            // if (this.rooms[room].users.length === 0) {
-            //     delete this.rooms[room];
-            //     console.log(`Room ${room} removed`);
-            // }
+            if (this.rooms[room].users.length === 0) {
+                delete this.rooms[room];
+                console.log(`Room ${room} removed`);
+            }
         }
   
 
@@ -43,7 +45,11 @@ class Sockets {
 
     getUsersInRoom(room) {
         return this.rooms[room] || [];
-      }
+    }
+
+    setBegun(room, flag) {
+        this.rooms[room].game = flag;
+    }
   }
   
   module.exports = Sockets;

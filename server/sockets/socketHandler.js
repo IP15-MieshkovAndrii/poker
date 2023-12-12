@@ -10,7 +10,7 @@ const socketHandler = (ws) => {
 
       connection.on('message', (message) => {
         const data = JSON.parse(message);
-        // console.log('Received:', data);
+
         if (data.type === 'joinRoom') {
           const { room, nickname } = data;
           sockets.joinRoom(room, nickname, ws);
@@ -23,6 +23,9 @@ const socketHandler = (ws) => {
         } else if (data.type === 'leaveRoom') {
           const { room, nickname } = data;
           sockets.leaveRoom(room, nickname, ws);
+          const usersInRoom = sockets.getUsersInRoom(room);
+          const response = JSON.stringify({ type: 'usersInRoom', users: usersInRoom });
+          ws.clients.forEach(client => client.send(response, { binary: false }));
 
           for (const client of ws.clients) {
             if (client.readyState !== WebSocket.OPEN) continue;
@@ -32,7 +35,7 @@ const socketHandler = (ws) => {
         } else if (data.type === 'getUsersInRoom') {
           const { room } = data;
           const usersInRoom = sockets.getUsersInRoom(room);
-          const response = JSON.stringify({ type: 'usersInRoom', users: usersInRoom });
+          const response = JSON.stringify({ type: 'usersInRoom', users: usersInRoom, id: room});
           ws.clients.forEach(client => client.send(response, { binary: false }));
 
 
@@ -41,6 +44,18 @@ const socketHandler = (ws) => {
             if (client === connection) continue;
             client.send(message, { binary: false });
           }
+        } else if (data.type === 'startGame') {
+          const { room } = data;
+
+          for(let currentRoom in sockets.rooms) {
+            if(currentRoom === room) {
+              sockets.setBegun(currentRoom, true);
+            }
+          }
+      
+          console.log("Host has started the game in: " + room);
+          const response = JSON.stringify({ type: 'gameBegun', id: room});
+          ws.clients.forEach(client => client.send(response, { binary: false }));
         }
 
     
