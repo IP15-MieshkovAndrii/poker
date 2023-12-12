@@ -45,7 +45,9 @@
             hostName: this.nickname,
           });
           if(response.status === 201){
-            this.$router.push({ name: 'BoardView', params: { token: response.data.token } });
+            sessionStorage.setItem('nickname', this.nickname);
+            this.$router.push({ name: 'BoardView', params: { id: response.data.id } });
+            
           }
   
         } catch (error) {
@@ -61,13 +63,9 @@
               nickname: this.nickname,
             });
           if(response.status === 200){
+            sessionStorage.setItem('nickname', this.nickname);
+            this.$router.push({ name: 'BoardView', params: { id: this.roomID } });
 
-            
-            this.$socket.emit('joinRoom', {
-              room: this.roomID,
-              nickname: this.nickname,
-            });
-            this.$router.push({ name: 'BoardView', params: { token: this.roomID } });
           }
   
         } catch (error) {

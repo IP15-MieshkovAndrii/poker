@@ -18,11 +18,12 @@ export const createRoom = async (data) => {
 
 export const getRoom = async (data) => {
     try {
-        console.log('Hello')
         const response = await axiosInstance.post('/rooms/data', {
               roomID: data.roomID,
               nickname: data.nickname,
         });
+
+
         return response;
     } catch (error) {
         console.error('Error',error);

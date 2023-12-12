@@ -1,7 +1,7 @@
 const generateToken = require('../config/generateToken');
 const Room = require('../models/Room');
 const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 
 exports.createRoom = async (req, res) => {
   try {
@@ -11,22 +11,20 @@ exports.createRoom = async (req, res) => {
       return res.status(400).json({ error: 'All fields are required.' });
     }
 
-    let id = generateRoomID();
+    let id = uuidv4();
     let existingRoom = await Room.findOne({ id });
     while (existingRoom) {
-      id = generateRoomID();
+      id = uuidv4();
       existingRoom = await Room.findOne({ id });
     }
 
     const newRoom = new Room({id, hostName});
     await newRoom.save();
 
-    const token = generateToken(id);
-
     const newUser = new User({nickname: hostName, roomID: id});
     await newUser.save();
 
-    res.status(201).json({token, newUser});
+    res.status(201).json({id, newUser});
 
   } catch (error) {
 
@@ -39,22 +37,20 @@ exports.createRoom = async (req, res) => {
 exports.checkRoom = async (req, res) => {
   try {
     const { roomID, nickname } = req.body;
-    const token = roomID
 
-    if (!token) {
+    if (!roomID) {
       return res.status(400).json({ error: 'Token is required in the request body.' });
     }
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
 
-    const existingRoom = await Room.findOne({ id: decodedToken.id });
+    const existingRoom = await Room.findOne({ id: roomID });
 
     if (existingRoom) {
-      const newUser = new User({nickname, roomID: decodedToken.id});
+      const newUser = new User({nickname, roomID: roomID});
       await newUser.save();
 
       res.status(200).json({ message: 'Room exists' });
     } else {
-      res.status(404).json({ error: 'Room not found' });
+      res.status(201).json({ message: 'Room not found' });
     }
 
   } catch (error) {
@@ -65,6 +61,3 @@ exports.checkRoom = async (req, res) => {
   }
 };
 
-function generateRoomID() {
-    return Math.random().toString(36).substring(7);
-  }
