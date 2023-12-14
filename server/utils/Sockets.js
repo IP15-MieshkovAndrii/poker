@@ -8,6 +8,7 @@ class Sockets {
             this.rooms[room] = {
                 users: [],
                 game: false,
+                poker: null,
             };
         }
 
@@ -49,6 +50,14 @@ class Sockets {
 
     setBegun(room, flag) {
         this.rooms[room].game = flag;
+    }
+
+    setPokerGame(room, poker) {
+        this.rooms[room].poker = poker;
+    }
+
+    getPokerGame(room) {
+        return this.rooms[room].poker;
     }
   }
   

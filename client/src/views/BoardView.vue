@@ -10,11 +10,11 @@
         <div class="myCards">
           <img class="card1 leftTilt" src="../assets/img/back.png">
           <img class="card2 rightTilt" src="../assets/img/back.png">
-          <div class="myPlayer dealer">
-            <img class="myDealerChip" src="../assets/img/DEALER-CHIP.png">
+          <div class="myPlayer">
+            <img class="myDealerChip" :class="{ 'dealer-active': playerName === dealer }" src="../assets/img/DEALER-CHIP.png">
             <p>
               <span class="myName">You</span><br>
-              <span class="myStack">2000</span>
+              <span class="myStack">{{chips}}</span>
             </p>
           </div>
         </div>
@@ -23,9 +23,10 @@
             <img class="opponentCards leftTilt" src="../assets/img/back.png">
             <img class="opponentCards rightTilt" src="../assets/img/back.png">
             <div class="otherPlayerInfo">
+              <img class="myDealerChip" :class="{ 'dealer-active': user === dealer }" src="../assets/img/DEALER-CHIP.png">
               <p>
                 <span class="opponentPlayerName">{{ user }}</span><br>
-                <span class="opponentStackSize">2000</span>
+                <span class="opponentStackSize">{{user.chips || 2000}}</span>
               </p>
             </div>
           </div>
@@ -64,9 +65,12 @@
           socket: new WebSocket('ws://127.0.0.1:8000/game'),
           otherPlayers: [],
           hostName: this.getHost() || '',
-          gameStarted: JSON.parse(localStorage.getItem('game')).gameStarted || false,
+          gameStarted: JSON.parse(sessionStorage.getItem('game'))?.gameStarted || false,
           isHost: false,
           allUsers: [],
+          dealer: 'Name',
+          pokerTable: {},
+          chips: 2000,
         };
     },
     methods: {
@@ -83,6 +87,7 @@
         this.socket.send(leaveRoomMessage);
         this.socket.close();
         this.$router.push('/');
+        sessionStorage.clear();
       },
 
       getUsers() {
@@ -93,17 +98,17 @@
         const data = JSON.parse(event.data);
         if(this.id === data.id){
           if (data.type === 'usersInRoom') {
-            const object = data.users.users
-            let array = [];
-            for (const property in object) {
-              array.push(object[property].nickname)
-            }
+            const array = data.users;
             this.otherPlayers = array
-            this.allUsers = array
           }
           if (data.type === 'gameBegun') {
             this.gameStarted = true;
-            poker.startGame(this.id, this.allUsers);
+            this.dealer = data.dealer;
+            this.pokerTable = data.pokerTable;
+
+            this.otherPlayers = this.pokerTable.getPlayers()
+
+            poker.startGame(this.id, this.allUser);
           }
         }
       },
@@ -147,7 +152,11 @@
 
     computed: {
       users() {
-        return this.otherPlayers.filter(user => user !== this.playerName);
+        if(this.otherPlayers && this.otherPlayers.length === 1) return [];
+        if(this.allUsers.length === 0) {
+          return this.otherPlayers.filter(user => user !== this.playerName);
+        }
+        return this.allUsers.filter(user => user.name !== this.playerName);
       },
     },
   };
@@ -321,6 +330,10 @@
     position:absolute;
     display: none;
     width: 2vw;
+  }
+
+  .dealer-active {
+    display: block;
   }
   </style>
   

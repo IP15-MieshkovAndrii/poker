@@ -1,5 +1,7 @@
 const WebSocket = require('ws');
 const Sockets = require('../utils/sockets');
+const PokerTable = require('../game/PokerTable')
+const PokerPlayer =require('../game/PokerPlayer')
 
 const sockets = new Sockets();
 
@@ -15,6 +17,17 @@ const socketHandler = (ws) => {
           const { room, nickname } = data;
           sockets.joinRoom(room, nickname, ws);
 
+          const pokerTable = null;
+
+          if(!sockets.getPokerGame(room)){
+            pokerTable = new PokerTable();
+            sockets.setPokerGame(room, pokerTable)
+          } else {
+            pokerTable = sockets.getPokerGame(room);
+          }
+          const pokerPlayer = new PokerPlayer(nickname, 2000)
+          pokerTable.addPlayer(pokerPlayer);
+          
           for (const client of ws.clients) {
             if (client.readyState !== WebSocket.OPEN) continue;
             if (client === connection) continue;
@@ -22,8 +35,18 @@ const socketHandler = (ws) => {
           }
         } else if (data.type === 'leaveRoom') {
           const { room, nickname } = data;
+
           sockets.leaveRoom(room, nickname, ws);
-          const usersInRoom = sockets.getUsersInRoom(room);
+
+          const usersInRoom = sockets.getUsersInRoom(room).users;
+          const users = [];
+          for (const player of usersInRoom) {
+            users.push(player.nickname);
+          }
+
+          const pokerTable = sockets.getPokerGame(room);
+          pokerTable.leaveGame()
+
           const response = JSON.stringify({ type: 'usersInRoom', users: usersInRoom });
           ws.clients.forEach(client => client.send(response, { binary: false }));
 
@@ -34,10 +57,14 @@ const socketHandler = (ws) => {
           }
         } else if (data.type === 'getUsersInRoom') {
           const { room } = data;
-          const usersInRoom = sockets.getUsersInRoom(room);
-          const response = JSON.stringify({ type: 'usersInRoom', users: usersInRoom, id: room});
-          ws.clients.forEach(client => client.send(response, { binary: false }));
+          const usersInRoom = sockets.getUsersInRoom(room).users;
+          const users = [];
+          for (const player of usersInRoom) {
+            users.push(player.nickname);
+          }
 
+          const response = JSON.stringify({ type: 'usersInRoom', users, id: room});
+          ws.clients.forEach(client => client.send(response, { binary: false }));
 
           for (const client of ws.clients) {
             if (client.readyState !== WebSocket.OPEN) continue;
@@ -46,16 +73,27 @@ const socketHandler = (ws) => {
           }
         } else if (data.type === 'startGame') {
           const { room } = data;
+          const pokerTable = sockets.getPokerGame(room);
+
+          console.log("Host has started the game in: " + room);
 
           for(let currentRoom in sockets.rooms) {
             if(currentRoom === room) {
               sockets.setBegun(currentRoom, true);
+              sockets.setPokerGame(currentRoom, pokerTable)
             }
           }
-      
-          console.log("Host has started the game in: " + room);
-          const response = JSON.stringify({ type: 'gameBegun', id: room});
+
+          const players = pokerTable.getPlayers();
+
+          const dealerIndex = Math.floor(Math.random() * players.length);
+          pokerTable.setDealer(dealerIndex)
+
+          
+          const response = JSON.stringify({ type: 'gameBegun', id: room, pokerTable, dealer});
           ws.clients.forEach(client => client.send(response, { binary: false }));
+
+
         }
 
     
@@ -68,38 +106,6 @@ const socketHandler = (ws) => {
 
 
   
-      // socket.on("joinRoom", ({ room, nickname }) => {
-      //   try {
-      //       // socket.join(room);
-      //       socket.nickname = nickname;
-      //       socket.room = room;
-      //       if (!sockets[room]) {
-      //         sockets[room] = {};
-      //         sockets[room].names = [];
-      //         sockets[room].start = false;
-      //       }
-      //       sockets[room].nicknames = [...sockets[room].nicknames, nickname];
-      //       console.log(`${nickname} joined room ${room}`);
-      //   } catch (error) {
-      //     console.log(error.message);
-      //   }
-      // });
-  
-      // socket.on("startGame", (room) => {
-      //   try {
-
-      //   } catch (error) {
-      //     console.log(error.message);
-      //   }
-      // });
-  
-      // socket.on("endGame", (room) => {
-      //   try {
-
-      //   } catch (error) {
-      //     console.log(error.message);
-      //   }
-      // });
     });
   };
   

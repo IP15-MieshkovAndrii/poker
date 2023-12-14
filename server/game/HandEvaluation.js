@@ -1,6 +1,4 @@
 const Card = require("./Сard.js");
-const Deck = require('./Deck');
-const PokerPlayer = require('./PokerPlayer');
 
 const tenNegTwo = .01;
 const tenNegFour = .0001;

@@ -38,7 +38,30 @@ class PokerPlayer {
       return callAmount;
     }
 
+    blind(blindAmount) {
+      if (blindAmount > this.chips) {
+        throw new Error(`Insufficient chips. ${this.name} has ${this.chips} chips.`);
+      }
+  
+      this.chips -= blindAmount;
+      this.currentBet += blindAmount;
+  
+      return blindAmount;
+    }
+
     getHand() {return this.hand;}
+
+    getName() {return this.name.nickname;}
+
+    getChips() {return this.chips;}
+
+    getCurrentBet() {return this.currentBet;}
+
+    getHasFolded() {return this.hasFolded;}
+
+
+    
+
   }
   
   module.exports = PokerPlayer;

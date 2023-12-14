@@ -4,13 +4,8 @@
 
 export const startGame = (id, users) => {
 
-    // const randomDealerIndex = Math.floor(Math.random() * users.length);
-
-
-
-    localStorage.setItem('game', JSON.stringify({room: id, users, gameStarted: true}));
-
-
+    sessionStorage.setItem('game', JSON.stringify({ room: id, gameStarted: true }));
+    sessionStorage.setItem('usersInRoom', JSON.stringify({ room: id, users}));
 
 }
   
