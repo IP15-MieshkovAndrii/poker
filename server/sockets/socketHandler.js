@@ -89,8 +89,20 @@ const socketHandler = (ws) => {
           const dealerIndex = Math.floor(Math.random() * players.length);
           pokerTable.setDealer(dealerIndex)
 
+          const smallBlind = pokerTable.getSmallBlind();
+          const bigBlind = pokerTable.getBigBlind();
+
+          let currentPlayer = pokerTable.nextPlayer(dealerIndex);
+          smallBlind = players[currentPlayer].blind(smallBlind);
+          bigBlind = players[pokerTable.nextPlayer(currentPlayer)].blind(bigBlind);
+
+          currentPlayer = pokerTable.nextPlayer(currentPlayer);
+
+          pokerTable.newHands();
+
+          const emitPlayers = pokerTable.emitPlayers()
           
-          const response = JSON.stringify({ type: 'gameBegun', id: room, pokerTable, dealer});
+          const response = JSON.stringify({ type: 'gameBegun', id: room, users: players, dealer});
           ws.clients.forEach(client => client.send(response, { binary: false }));
 
 

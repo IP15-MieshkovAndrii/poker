@@ -39,14 +39,15 @@ class PokerPlayer {
     }
 
     blind(blindAmount) {
-      if (blindAmount > this.chips) {
-        throw new Error(`Insufficient chips. ${this.name} has ${this.chips} chips.`);
-      }
-  
-      this.chips -= blindAmount;
+      const newBlind = Math.min(blindAmount, this.chips);
+      this.chips -= newBlind;
       this.currentBet += blindAmount;
   
       return blindAmount;
+    }
+
+    resetHand() {
+      this.hand = [];
     }
 
     getHand() {return this.hand;}
@@ -62,6 +63,7 @@ class PokerPlayer {
 
     
 
+  
   }
   
   module.exports = PokerPlayer;
