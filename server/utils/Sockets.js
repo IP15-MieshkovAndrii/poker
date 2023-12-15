@@ -57,6 +57,7 @@ class Sockets {
     }
 
     getPokerGame(room) {
+        if(!this.rooms[room]) return null;
         return this.rooms[room].poker;
     }
   }

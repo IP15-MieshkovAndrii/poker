@@ -52,7 +52,7 @@ class PokerPlayer {
 
     getHand() {return this.hand;}
 
-    getName() {return this.name.nickname;}
+    getName() {return this.name;}
 
     getChips() {return this.chips;}
 

@@ -9,6 +9,7 @@ class PokerTable {
       this.smallBlind = 1;
       this.bigBlind = 2;
       this.currentPlayer = 0;
+      this.potSize = 0;
     }
   
     addPlayer(player) {
@@ -51,15 +52,12 @@ class PokerTable {
     }
 
     emitPlayers(){
-      /*
-      [dealerPosition, {name, stacksize, currMoneyInBettingRound, isFolded, card1, card2, isShown1, isShown2, isStraddled, isTurn}]
-      */
-
       let returnArr = [];
       let dealerIndex = this.dealerIndex;
-      returnArr.push(dealerIndex);
+      let pot = this.potSize;
+      returnArr.push(dealerIndex, pot);
       let currPerson;
-      for(var i = 0; i < this.getTotalPlayers(); i++){
+      for(let i = 0; i < this.getPlayers().length; i++) {
           currPerson = this.players[i];
           let holeCard1;
           let holeCard2;
@@ -68,13 +66,19 @@ class PokerTable {
               holeCard2 = "back.png"
           }
           else{
-              holeCard1 = currPerson.getHand()[1];
-              holeCard2 = currPerson.getHand()[2];
+              holeCard1 = currPerson.getHand()[0].cardToPNG();
+              holeCard2 = currPerson.getHand()[1].cardToPNG();
           }
           
-          returnArr.push({name: currPerson.getName(), stack: currPerson.getChips(), moneyIn: currPerson.getCurrentBet(), 
-          card1: holeCard1, card2: holeCard2, 
-          isShown1: false, isShown2: false, isTurn: (this.currentPlayer === i)
+          returnArr.push({
+            name: currPerson.getName(), 
+            chips: currPerson.getChips(), 
+            moneyIn: currPerson.getCurrentBet(), 
+            card1: holeCard1, 
+            card2: holeCard2, 
+            isShown1: false, 
+            isShown2: false, 
+            isTurn: (this.currentPlayer === i)
           });
       }
       return  returnArr;
@@ -85,6 +89,17 @@ class PokerTable {
 
     setDealer(dealer) {
       this.dealerIndex = dealer;
+    }
+
+    changePot(amount) {
+      this.potSize += amount;
+      return this.potSize;
+    }
+
+    resetPot() {
+      const pot = this.potSize;
+      this.potSize = 0;
+      return pot
     }
 
     nextDealer() {  

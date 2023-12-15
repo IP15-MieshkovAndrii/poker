@@ -17,7 +17,7 @@ const socketHandler = (ws) => {
           const { room, nickname } = data;
           sockets.joinRoom(room, nickname, ws);
 
-          const pokerTable = null;
+          let pokerTable = null;
 
           if(!sockets.getPokerGame(room)){
             pokerTable = new PokerTable();
@@ -25,7 +25,7 @@ const socketHandler = (ws) => {
           } else {
             pokerTable = sockets.getPokerGame(room);
           }
-          const pokerPlayer = new PokerPlayer(nickname, 2000)
+          let pokerPlayer = new PokerPlayer(nickname, 2000)
           pokerTable.addPlayer(pokerPlayer);
           
           for (const client of ws.clients) {
@@ -40,12 +40,15 @@ const socketHandler = (ws) => {
 
           const usersInRoom = sockets.getUsersInRoom(room).users;
           const users = [];
-          for (const player of usersInRoom) {
-            users.push(player.nickname);
+          if(usersInRoom && usersInRoom.length) {
+            for (const player of usersInRoom) {
+              users.push(player.nickname);
+            }
           }
 
-          const pokerTable = sockets.getPokerGame(room);
-          pokerTable.leaveGame()
+          let pokerTable = sockets.getPokerGame(room);
+          if (pokerTable) pokerTable.leaveGame();
+
 
           const response = JSON.stringify({ type: 'usersInRoom', users: usersInRoom });
           ws.clients.forEach(client => client.send(response, { binary: false }));
@@ -73,7 +76,7 @@ const socketHandler = (ws) => {
           }
         } else if (data.type === 'startGame') {
           const { room } = data;
-          const pokerTable = sockets.getPokerGame(room);
+          let pokerTable = sockets.getPokerGame(room);
 
           console.log("Host has started the game in: " + room);
 
@@ -86,26 +89,29 @@ const socketHandler = (ws) => {
 
           const players = pokerTable.getPlayers();
 
-          const dealerIndex = Math.floor(Math.random() * players.length);
+          let dealerIndex = Math.floor(Math.random() * players.length);
           pokerTable.setDealer(dealerIndex)
 
-          const smallBlind = pokerTable.getSmallBlind();
-          const bigBlind = pokerTable.getBigBlind();
+          let smallBlind = pokerTable.getSmallBlind();
+          let bigBlind = pokerTable.getBigBlind();
 
           let currentPlayer = pokerTable.nextPlayer(dealerIndex);
           smallBlind = players[currentPlayer].blind(smallBlind);
+          pokerTable.changePot(smallBlind)
           bigBlind = players[pokerTable.nextPlayer(currentPlayer)].blind(bigBlind);
+          pokerTable.changePot(bigBlind)
 
-          currentPlayer = pokerTable.nextPlayer(currentPlayer);
+          currentPlayer = pokerTable.nextPlayer(pokerTable.nextPlayer(currentPlayer));
 
           pokerTable.newHands();
 
-          const emitPlayers = pokerTable.emitPlayers()
+          const emitPlayers = pokerTable.emitPlayers();
+          console.log(emitPlayers);
+
+          const users = players.map(player => player.name);
           
-          const response = JSON.stringify({ type: 'gameBegun', id: room, users: players, dealer});
+          const response = JSON.stringify({ type: 'gameBegun', id: room, users, emitPlayers});
           ws.clients.forEach(client => client.send(response, { binary: false }));
-
-
         }
 
     

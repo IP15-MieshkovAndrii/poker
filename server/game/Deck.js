@@ -21,7 +21,7 @@ class Deck {
     }
 
     dealCard() {
-        return this.cards.pop();
+        return this.deck.pop();
     }
 }
 

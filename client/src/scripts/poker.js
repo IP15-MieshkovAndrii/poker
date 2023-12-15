@@ -5,7 +5,7 @@
 export const startGame = (id, users) => {
 
     sessionStorage.setItem('game', JSON.stringify({ room: id, gameStarted: true }));
-    sessionStorage.setItem('usersInRoom', JSON.stringify({ room: id, users}));
+    sessionStorage.setItem('usersInRoom', users);
 
 }
   

@@ -5,38 +5,45 @@
       </div>
       <div class="table">
         <div class="pot" v-if="gameStarted">
-          POT SIZE: 0
+          POT SIZE: {{ potSize }}
         </div>
         <div class="myCards">
           <img class="card1 leftTilt" src="../assets/img/back.png">
           <img class="card2 rightTilt" src="../assets/img/back.png">
-          <div class="myPlayer">
+          <div class="myPlayer"  :class="{ 'currentPlayer': playerName === currentPlayer }">
             <img class="myDealerChip" :class="{ 'dealer-active': playerName === dealer }" src="../assets/img/DEALER-CHIP.png">
             <p>
               <span class="myName">You</span><br>
               <span class="myStack">{{chips}}</span>
+              <div class="tooltip" :class="{'visible': playerName === tooltipName}">
+                {{tooltipText}}
+              </div>
             </p>
           </div>
+
         </div>
         <div class="players">
           <div v-for="user in users" :key="user.nickname" class="player">
             <img class="opponentCards leftTilt" src="../assets/img/back.png">
             <img class="opponentCards rightTilt" src="../assets/img/back.png">
-            <div class="otherPlayerInfo">
-              <img class="myDealerChip" :class="{ 'dealer-active': user === dealer }" src="../assets/img/DEALER-CHIP.png">
+            <div class="otherPlayerInfo" :class="{ 'currentPlayer': user.name === currentPlayer}">
+              <img class="myDealerChip" :class="{ 'dealer-active': user.name === dealer }" src="../assets/img/DEALER-CHIP.png">
               <p>
-                <span class="opponentPlayerName">{{ user }}</span><br>
+                <span class="opponentPlayerName">{{ user.name }}</span><br>
                 <span class="opponentStackSize">{{user.chips || 2000}}</span>
+                <div class="tooltip" :class="{'visible': user.name === tooltipName}">
+                  {{tooltipText}}
+                </div>
               </p>
             </div>
           </div>
         </div>
       </div>
       <div class="userPanel">
-          <button>FOLD</button>
-          <button>CHECK</button>
-          <button>CALL</button>
-          <button>RAISE</button>
+          <button :disabled="myInfo.isTurn !== true">FOLD</button>
+          <button :disabled="myInfo.isTurn !== true">CHECK</button>
+          <button :disabled="myInfo.isTurn !== true">CALL</button>
+          <button :disabled="myInfo.isTurn !== true">RAISE</button>
 
         <button class="red" @click="leaveRoom">LEAVE</button>
       </div>
@@ -68,15 +75,18 @@
           gameStarted: JSON.parse(sessionStorage.getItem('game'))?.gameStarted || false,
           isHost: false,
           allUsers: [],
-          dealer: 'Name',
-          pokerTable: {},
+          dealer: '',
+          myInfo: '',
           chips: 2000,
+          tooltipName: '',
+          tooltipText: '',
+          potSize: 0,
+          currentPlayer: '',
         };
     },
     methods: {
       toggleTokenVisibility() {
         this.isIDVisible = !this.isIDVisible;
-        console.log(this?.$socket)
       },
       handleSocketOpen() {
         console.log('Connected');
@@ -99,18 +109,126 @@
         if(this.id === data.id){
           if (data.type === 'usersInRoom') {
             const array = data.users;
-            this.otherPlayers = array
+            const objectArray = array.map(name => ({
+              name: name,
+              chips: 2000
+            }));
+            this.otherPlayers = objectArray;
           }
           if (data.type === 'gameBegun') {
             this.gameStarted = true;
-            this.dealer = data.dealer;
-            this.pokerTable = data.pokerTable;
+            const dealerIndex = data.emitPlayers[0];
+            setTimeout(() => {
+              this.dealer = data.users[dealerIndex];
 
-            this.otherPlayers = this.pokerTable.getPlayers()
+              console.log('Dealer assigned:', this.dealer);
+              const str = 'Dealer assigned:' + this.dealer;
 
-            poker.startGame(this.id, this.allUser);
+              this.setToolTip(str, this.dealer)
+
+            }, 1000);
+            const array = data.emitPlayers.slice(2);
+
+            const smallBlindTimeout = 1000 + 2200;
+            const bigBlindTimeout = smallBlindTimeout + 2200;
+
+            this.smallBigBlind(array, dealerIndex, smallBlindTimeout, bigBlindTimeout);
+
+            poker.startGame(this.id, data.users);
           }
         }
+      },
+
+      smallBigBlind(array, dealerIndex, sT, bT) {
+        let updatedArray = array.map(user => ({
+          ...user,
+          chips: user.chips + user.moneyIn
+        }));
+        this.allUsers = updatedArray;
+
+        setTimeout(() => {
+          updatedArray = updatedArray.map(user => ({
+            ...user,
+            chips: user.chips - (user.moneyIn === 1 ? user.moneyIn : 0)
+          }));
+          let currentName = this.allUsers[(dealerIndex+1)%this.allUsers.length].name;
+          if(this.playerName === currentName)
+          this.allUsers = updatedArray;
+          console.log('Small blind:', currentName);
+
+          this.currentPlayer = currentName;
+
+          const str = 'Small blind: 1 chip';
+          this.setToolTip(str, currentName)
+
+          this.potSize += 1;
+        }, sT);
+
+        setTimeout(() => {
+          this.allUsers = array;
+          let currentName = this.allUsers[(dealerIndex+2)%this.allUsers.length].name;
+          console.log('Big blind:', currentName);
+
+          this.currentPlayer = currentName;
+
+          const str = 'Big blind: 2 chips';
+          this.setToolTip(str, currentName)
+
+          this.potSize += 2;
+
+        }, bT);
+
+        setTimeout(() => {
+          this.setToolTip()
+
+          // const userWithTurn = this.allUsers.find(user => user.isTurn === true);
+          this.currentPlayer = '';
+
+          this.giveCards();
+        }, bT+2200);
+
+      },
+
+      setToolTip(str='', name='') {
+        this.tooltipName = name;
+        this.tooltipText = str;
+      },
+
+      giveCards() {
+        const card1Element = document.querySelector('.card1');
+        const card2Element = document.querySelector('.card2');
+        const opponentCardsElement = document.querySelector('.opponentCards');
+        const opponentCardsElement2 = document.querySelector('.opponentCards.rightTilt');
+
+        if (card1Element && card2Element && opponentCardsElement) {
+          card1Element.classList.add('card-display');
+          card2Element.classList.add('card-display');
+          opponentCardsElement.classList.add('card-display');
+          opponentCardsElement2.classList.add('card-display');
+        }
+        setTimeout(this.giveMyCards, 1000);
+      },
+
+      giveMyCards() {
+        const card1Element = document.querySelector('.card1');
+        const card2Element = document.querySelector('.card2');
+
+        console.log('1')
+
+        const card1Src = 'assets/img/' + this.myInfo.card1;
+        const card2Src = 'assets/img/' + this.myInfo.card2;
+
+        if (card1Element && card2Element) {
+          console.log('2')
+          const src1 = card1Element.src;
+          card1Element.src = card1Src;
+          card2Element.src = card2Src;
+          console.log(card2Element, card1Src, src1)
+        }
+
+
+        card1Element.classList.add('animate-card');
+        card2Element.classList.add('animate-card');
       },
 
       async getHost() {
@@ -154,8 +272,10 @@
       users() {
         if(this.otherPlayers && this.otherPlayers.length === 1) return [];
         if(this.allUsers.length === 0) {
-          return this.otherPlayers.filter(user => user !== this.playerName);
+          return this.otherPlayers.filter(user => user.name !== this.playerName);
         }
+        this.myInfo = this.allUsers.filter(user => user.name === this.playerName)[0];
+        this.chips = this.myInfo.chips
         return this.allUsers.filter(user => user.name !== this.playerName);
       },
     },
@@ -214,6 +334,20 @@
     background-color: #cdbb31;
   }
 
+  .userPanel button:disabled {
+    cursor:not-allowed;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  .userPanel button:hover:disabled,
+  .userPanel button:active:disabled {
+    background-color: inherit;
+    color: inherit;
+    border-color: inherit;
+    box-shadow: none;
+  }
+
   .svg-container {
     position: relative;
     cursor: pointer;
@@ -248,6 +382,10 @@
     transform: translateX(-50%);
     width: 11vw;
   }
+
+  .otherPlayerInfo{
+    position: relative;
+  }
   .otherPlayerInfo p{
     font-family: theFont;
     background-color: white;
@@ -259,6 +397,8 @@
     text-transform: uppercase;
     padding-bottom: 0;
     border: 2px solid black;
+    z-index: 2;
+    position: relative;
   }
 
   .myCards p{
@@ -272,6 +412,8 @@
     text-transform: uppercase;
     font-weight: 800;
     border: 2px solid black;
+    z-index: 2;
+    position: relative;
   }
   .card1, .card2{
     width: 5.5vw;
@@ -327,13 +469,110 @@
   }
 
   .myDealerChip{
-    position:absolute;
+    position: absolute;
     display: none;
-    width: 2vw;
+    z-index: 9999;
+
   }
 
   .dealer-active {
     display: block;
+    animation: none;
+    width: 2vw;
+    animation: dealerAnimation 1.2s ease-in-out;
+  }
+
+  .tooltip {
+    width: 15vw;
+    visibility: hidden;
+    background-color: white;
+    color: black;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    top: 130%;
+    left: 2.2vw;
+    margin-left: -60px;
+    text-transform: none;
+    padding: 1em;
+    font-weight: 700;
+
+  }
+
+  .tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color:  transparent transparent white transparent;
+  }
+
+  .visible {
+    visibility: visible;
+  }
+
+
+  .currentPlayer::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10vw;
+    height: 10vw;
+    background-color: rgba(40, 205, 109, 0.5);
+    border-radius: 100%;
+    z-index: 1;
+    border: 2px dashed rgb(227, 255, 18);
+    animation: spin 10s linear infinite;
+  }
+
+  .card-display {
+    display: inline;
+    animation: appearFromTop 0.5s ease-in-out;
+  }
+
+  .animate-card {
+    animation: rotateCard 0.5s ease-in-out;
+  }
+
+  @keyframes spin {
+    from {transform: translate(-50%, -50%) rotate(0);}
+    to   {transform: translate(-50%, -50%) rotate(360deg);}
+  }
+
+  @keyframes dealerAnimation {
+    from {
+      width: 20vw;
+      opacity: 0;
+    }
+
+    to {
+      width: 2vw;
+      opacity: 1;
+    }
+  }
+
+  @keyframes appearFromTop {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes rotateCard {
+    from {transform: rotateY(0)}
+    to   {transform: rotateY(360)}
   }
   </style>
   

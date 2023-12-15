@@ -29,7 +29,9 @@ app.use('/rooms', require('./routes/rooms'));
 
 mongoose.connection.once('open', () => {
   console.log('Connected to MongoDB')
-})
+}).on('error', (error) => {
+  console.error('MongoDB connection error:', error);
+});
 
 httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
