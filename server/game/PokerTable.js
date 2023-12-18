@@ -10,10 +10,13 @@ class PokerTable {
       this.bigBlind = 2;
       this.currentPlayer = 0;
       this.potSize = 0;
+      this.leftUntilEnd = this.players.length;
+      this.round = 1;
     }
   
     addPlayer(player) {
       this.players.push(player);
+      this.leftUntilEnd = this.players.length;
     }
 
     getPlayers() {
@@ -61,7 +64,7 @@ class PokerTable {
           currPerson = this.players[i];
           let holeCard1;
           let holeCard2;
-          if(currPerson.getHand() == null){
+          if(currPerson.getHand()[0] == null){
               holeCard1 = "back.png";
               holeCard2 = "back.png"
           }
@@ -78,7 +81,8 @@ class PokerTable {
             card2: holeCard2, 
             isShown1: false, 
             isShown2: false, 
-            isTurn: (this.currentPlayer === i)
+            isTurn: (this.currentPlayer === i),
+            isFold: currPerson.getHasFolded(),
           });
       }
       return  returnArr;
@@ -110,14 +114,43 @@ class PokerTable {
       }
     }
 
-    nextPlayer(i) {
-      if (i === -1 || i === this.players.length - 1) {
-        this.currentPlayer = 0;
-        return 0;
-      } else {
-        this.currentPlayer = i+1;
-        return i+1;
-      }
+    nextPlayer(i = this.currentPlayer) {
+      let nextIndex = i;
+
+      do {
+        if (nextIndex === -1 || nextIndex === this.players.length - 1) {
+          nextIndex = 0;
+        } else {
+          nextIndex++;
+        }
+      } while (this.players[nextIndex].getHasFolded());
+    
+      this.currentPlayer = nextIndex;
+      return nextIndex;
+    }
+
+    getCurrentPlayer() {
+      return this.currentPlayer;
+    }
+
+    getLeftUntilEnd() {
+      return this.leftUntilEnd;
+    }
+
+    setLeftUntilEnd(i) {
+      this.leftUntilEnd = i;
+    }
+    oneMoreLeft() {
+      this.leftUntilEnd -= 1;
+      return this.leftUntilEnd;
+    }
+
+    getRound() {
+      return this.round;
+    }
+
+    setRound(i) {
+      this.round = i;
     }
   }
   

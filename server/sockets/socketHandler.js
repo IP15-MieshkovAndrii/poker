@@ -112,6 +112,56 @@ const socketHandler = (ws) => {
           
           const response = JSON.stringify({ type: 'gameBegun', id: room, users, emitPlayers});
           ws.clients.forEach(client => client.send(response, { binary: false }));
+        } else if (data.type === 'playTurn') {
+          const {room, choice, currentBet} = data;
+
+          let pokerTable = sockets.getPokerGame(room);
+          const players = pokerTable.getPlayers();
+          let currentPlayerInd = pokerTable.getCurrentPlayer()
+          let currentPlayer = players[currentPlayerInd];
+          let leftUntilEnd = pokerTable.getLeftUntilEnd();
+          let round = pokerTable.getRound();
+          let message;
+          let roundEnd = false;
+          let bet = 0;
+          let name = currentPlayer.name;
+
+          if (choice === 'FOLD') {
+            currentPlayer.fold();
+            message = 'Fold'
+          } else if (choice === 'CALL') {
+            bet = currentBet - currentPlayer.getCurrentBet();
+            currentPlayer.call(bet);
+            message = 'Call'
+            pokerTable.changePot(bet)
+          } else if (choice === 'CHECK') {
+            message = 'Check'
+          } else if (choice === 'RAISE') {
+            const {raiseNumber, allIn} = data;
+            bet = raiseNumber;
+
+            if(allIn) message = 'All-in';
+            else message = 'Raise ' + bet;
+
+            currentPlayer.placeBet(+bet);
+            pokerTable.changePot(+bet)
+          } 
+
+          bet = currentPlayer.getCurrentBet()
+
+          if (leftUntilEnd === 0) {
+            pokerTable.setLeftUntilEnd(players.length)
+            pokerTable.setRound(round+1);
+            roundEnd = true;
+          } else {
+            pokerTable.oneMoreLeft()
+          }
+
+          pokerTable.nextPlayer(currentPlayerInd);
+          const emitPlayers = pokerTable.emitPlayers();
+
+          const response = JSON.stringify({ type: 'playTurn', id: room, name, emitPlayers, message, roundEnd, bet});
+          ws.clients.forEach(client => client.send(response, { binary: false }));
         }
 
     

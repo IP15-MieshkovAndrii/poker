@@ -28,6 +28,7 @@ class PokerPlayer {
 
     fold() {
       this.hasFolded = true;
+      this.resetHand();
     }
 
     call(betAmount) {
@@ -41,7 +42,7 @@ class PokerPlayer {
     blind(blindAmount) {
       const newBlind = Math.min(blindAmount, this.chips);
       this.chips -= newBlind;
-      this.currentBet += blindAmount;
+      this.currentBet = blindAmount;
   
       return blindAmount;
     }

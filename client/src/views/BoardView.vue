@@ -8,8 +8,9 @@
           POT SIZE: {{ potSize }}
         </div>
         <div class="myCards">
-          <img class="card1 leftTilt" src="../assets/img/back.png">
-          <img class="card2 rightTilt" src="../assets/img/back.png">
+          <img v-if="!myInfo.isFold" class="card1 leftTilt" src="../assets/img/back.png">
+          <img v-if="!myInfo.isFold" class="card2 rightTilt" src="../assets/img/back.png">
+          <div v-if="myInfo.isFold" class="fold">FOLD</div>
           <div class="myPlayer"  :class="{ 'currentPlayer': playerName === currentPlayer }">
             <img class="myDealerChip" :class="{ 'dealer-active': playerName === dealer }" src="../assets/img/DEALER-CHIP.png">
             <p>
@@ -24,8 +25,9 @@
         </div>
         <div class="players">
           <div v-for="user in users" :key="user.nickname" class="player">
-            <img class="opponentCards leftTilt" src="../assets/img/back.png">
-            <img class="opponentCards rightTilt" src="../assets/img/back.png">
+            <img v-if="!user.isFold" class="opponentCards leftTilt" src="../assets/img/back.png">
+            <img v-if="!user.isFold" class="opponentCards rightTilt" src="../assets/img/back.png">
+            <div v-if="user.isFold" class="fold">FOLD</div>
             <div class="otherPlayerInfo" :class="{ 'currentPlayer': user.name === currentPlayer}">
               <img class="myDealerChip" :class="{ 'dealer-active': user.name === dealer }" src="../assets/img/DEALER-CHIP.png">
               <p>
@@ -40,12 +42,15 @@
         </div>
       </div>
       <div class="userPanel">
-          <button :disabled="myInfo.isTurn !== true">FOLD</button>
-          <button :disabled="myInfo.isTurn !== true">CHECK</button>
-          <button :disabled="myInfo.isTurn !== true">CALL</button>
-          <button :disabled="myInfo.isTurn !== true">RAISE</button>
-
+        <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer)" @click="myTurn('FOLD')">FOLD</button>
+        <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer) || (myInfo.moneyIn < currentBet)" @click="myTurn('CHECK')">CHECK</button>
+        <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer) || (myInfo.moneyIn >= currentBet)" @click="myTurn('CALL')">CALL</button>
+        <button :disabled="myInfo.isTurn !== true" @click="doRaise">RAISE</button>
         <button class="red" @click="leaveRoom">LEAVE</button>
+      </div>
+      <div class="raiseContainer">
+        <input type="range" orient="vertical" min="2" max="150" value="2" class="slider" id="myRange">
+        <span class="raise-value"></span>
       </div>
       <div class="svg-container" @click="toggleTokenVisibility">
         <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="30" viewBox="0,0,256,256">
@@ -82,6 +87,8 @@
           tooltipText: '',
           potSize: 0,
           currentPlayer: '',
+          currentBet: 0,
+          maxRaise: Math.min(150, this.chips)
         };
     },
     methods: {
@@ -114,8 +121,7 @@
               chips: 2000
             }));
             this.otherPlayers = objectArray;
-          }
-          if (data.type === 'gameBegun') {
+          } else if (data.type === 'gameBegun') {
             this.gameStarted = true;
             const dealerIndex = data.emitPlayers[0];
             setTimeout(() => {
@@ -135,6 +141,24 @@
             this.smallBigBlind(array, dealerIndex, smallBlindTimeout, bigBlindTimeout);
 
             poker.startGame(this.id, data.users);
+          } else if (data.type === 'playTurn') {
+            const emitPlayers = data.emitPlayers
+            this.allUsers = emitPlayers.slice(2);
+            this.potSize = data.emitPlayers[1];
+            this.currentBet = data.bet;
+            this.setToolTip(data.message, data.name);
+
+            setTimeout(() => {
+              if(this.tooltipName === data.name) this.setToolTip('', '');
+            }, 2200);
+
+            if (data.roundEnd) {
+              console.log('Hey')
+              // this.socket.send(JSON.stringify({ type: 'newRound', room: this.id}));
+            } else {
+              this.currentPlayer = this.allUsers.find(user => user.isTurn === true).name;
+            }
+            
           }
         }
       },
@@ -162,6 +186,8 @@
           this.setToolTip(str, currentName)
 
           this.potSize += 1;
+
+          this.currentBet = 1;
         }, sT);
 
         setTimeout(() => {
@@ -176,16 +202,26 @@
 
           this.potSize += 2;
 
+          this.currentBet = 2;
+
         }, bT);
 
         setTimeout(() => {
           this.setToolTip()
 
-          // const userWithTurn = this.allUsers.find(user => user.isTurn === true);
           this.currentPlayer = '';
 
           this.giveCards();
         }, bT+2200);
+
+        setTimeout(() => {
+
+
+          const userWithTurn = this.allUsers.find(user => user.isTurn === true);
+          this.currentPlayer = userWithTurn.name;
+
+          this.giveCards();
+        }, bT+4000);
 
       },
 
@@ -213,23 +249,37 @@
         const card1Element = document.querySelector('.card1');
         const card2Element = document.querySelector('.card2');
 
-        console.log('1')
-
         const card1Src = 'assets/img/' + this.myInfo.card1;
         const card2Src = 'assets/img/' + this.myInfo.card2;
 
         if (card1Element && card2Element) {
-          console.log('2')
-          const src1 = card1Element.src;
           card1Element.src = card1Src;
           card2Element.src = card2Src;
-          console.log(card2Element, card1Src, src1)
+          console.log(this.myInfo.card1, this.myInfo.card2)
         }
-
 
         card1Element.classList.add('animate-card');
         card2Element.classList.add('animate-card');
       },
+
+      myTurn(choice) {
+        this.socket.send(JSON.stringify({ type: 'playTurn', room: this.id, choice, currentBet: this.currentBet }));
+      },
+
+      doRaise() {
+        let range = document.querySelector('.slider');
+        let raiseNumber = range.value;
+        let allIn = false;
+        if (raiseNumber === 'ALL IN') {
+          raiseNumber = this.chips;
+          allIn = true;
+        }
+        const choice = 'RAISE';
+
+        range.value = range.min;
+        this.socket.send(JSON.stringify({ type: 'playTurn', room: this.id, choice, currentBet: this.currentBet, raiseNumber, allIn }));
+      },
+      
 
       async getHost() {
         try {
@@ -279,6 +329,24 @@
         return this.allUsers.filter(user => user.name !== this.playerName);
       },
     },
+
+    mounted() {
+
+      let range = document.querySelector('.slider');
+      let value = document.querySelector('.raise-value');
+      let maxChips = this.chips;
+
+      range.max = maxChips;
+      value.innerHTML = range.value;
+
+      range.addEventListener('input', function(event) {
+        if (event.target.value == maxChips) {
+          value.innerHTML = 'ALL IN';
+        } else {
+          value.innerHTML = event.target.value;
+        }
+      });
+    }
   };
   </script>
   
@@ -418,11 +486,15 @@
   .card1, .card2{
     width: 5.5vw;
     background: 0;
+    position: relative;
+    z-index: 2;
     display: none;
   }
 
   .opponentCards {
     width: 4vw;
+    z-index: 2;
+    position: relative;
     display: none;
   }
   .leftTilt{
@@ -516,7 +588,6 @@
     visibility: visible;
   }
 
-
   .currentPlayer::before {
     content: '';
     position: absolute;
@@ -540,6 +611,48 @@
   .animate-card {
     animation: rotateCard 0.5s ease-in-out;
   }
+
+  .raiseContainer {
+    position: absolute;
+    right: 5vw;
+    bottom: 25vh;
+    height: 40vh;
+    width: 50px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    align-items: center;
+  }
+  .slider {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 25px;
+    height: 100%;
+    background: #d3d3d3;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity .2s;
+    writing-mode: bt-lr; 
+    -webkit-appearance: slider-vertical;
+  }
+
+  .slider:hover {
+    opacity: 1;
+  }
+
+  .fold {
+    position: absolute;
+    font-size: 4vw;
+    color: rgb(154, 152, 152);
+    bottom: 160%;
+    font-weight: 900;
+    font-style: oblique;
+    text-decoration:underline;
+    animation: appearFromTop 0.5s ease-in-out;
+  }
+
+
 
   @keyframes spin {
     from {transform: translate(-50%, -50%) rotate(0);}
