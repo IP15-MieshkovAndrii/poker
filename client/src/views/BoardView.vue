@@ -4,15 +4,22 @@
         <button @click="startGame">START</button>
       </div>
       <div class="table">
+        <div class="communityCards">
+          <img class='comCard' src="/img/back.png">
+          <img class='comCard' src="/img/back.png">
+          <img class='comCard' src="/img/back.png">
+          <img class='comCard' src="/img/back.png">
+          <img class='comCard' src="/img/back.png">
+        </div>
         <div class="pot" v-if="gameStarted">
           POT SIZE: {{ potSize }}
         </div>
         <div class="myCards">
-          <img v-if="!myInfo.isFold" class="card1 leftTilt" src="../assets/img/back.png">
-          <img v-if="!myInfo.isFold" class="card2 rightTilt" src="../assets/img/back.png">
+          <img v-if="!myInfo.isFold" class="card1 leftTilt" :src="getCardImage(myInfo.card1, true)">
+          <img v-if="!myInfo.isFold" class="card2 rightTilt" :src="getCardImage(myInfo.card2, true)">
           <div v-if="myInfo.isFold" class="fold">FOLD</div>
           <div class="myPlayer"  :class="{ 'currentPlayer': playerName === currentPlayer }">
-            <img class="myDealerChip" :class="{ 'dealer-active': playerName === dealer }" src="../assets/img/DEALER-CHIP.png">
+            <img class="myDealerChip" :class="{ 'dealer-active': playerName === dealer }" src="/img/DEALER-CHIP.png">
             <p>
               <span class="myName">You</span><br>
               <span class="myStack">{{chips}}</span>
@@ -24,12 +31,12 @@
 
         </div>
         <div class="players">
-          <div v-for="user in users" :key="user.nickname" class="player">
-            <img v-if="!user.isFold" class="opponentCards leftTilt" src="../assets/img/back.png">
-            <img v-if="!user.isFold" class="opponentCards rightTilt" src="../assets/img/back.png">
+          <div v-for="user in users" :key="user.name" class="player">
+            <img v-if="!user.isFold" class="opponentCards leftTilt" :src="getCardImage(user.card1)">
+            <img v-if="!user.isFold" class="opponentCards rightTilt" :src="getCardImage(user.card2)">
             <div v-if="user.isFold" class="fold">FOLD</div>
             <div class="otherPlayerInfo" :class="{ 'currentPlayer': user.name === currentPlayer}">
-              <img class="myDealerChip" :class="{ 'dealer-active': user.name === dealer }" src="../assets/img/DEALER-CHIP.png">
+              <img class="myDealerChip" :class="{ 'dealer-active': user.name === dealer }" src="/img/DEALER-CHIP.png">
               <p>
                 <span class="opponentPlayerName">{{ user.name }}</span><br>
                 <span class="opponentStackSize">{{user.chips || 2000}}</span>
@@ -88,7 +95,9 @@
           potSize: 0,
           currentPlayer: '',
           currentBet: 0,
-          maxRaise: Math.min(150, this.chips)
+          maxRaise: Math.min(150, this.chips),
+          communityCards: [],
+          showdown: false,
         };
     },
     methods: {
@@ -153,12 +162,21 @@
             }, 2200);
 
             if (data.roundEnd) {
-              console.log('Hey')
-              // this.socket.send(JSON.stringify({ type: 'newRound', room: this.id}));
+              if (this.currentPlayer === this.playerName) {
+                this.socket.send(JSON.stringify({ type: 'newRound', room: this.id }));
+              }
+
             } else {
               this.currentPlayer = this.allUsers.find(user => user.isTurn === true).name;
             }
             
+          } else if (data.type === 'newRound') {
+            this.currentPlayer = this.allUsers.find(user => user.isTurn === true).name;
+            this.cardsOnTable(data.communityCards);
+          } else if (data.type === 'showDown') {
+            this.currentPlayer = '';
+            this.showdown = true;
+            setTimeout(this.results(data.bestHands), 2000);
           }
         }
       },
@@ -233,14 +251,17 @@
       giveCards() {
         const card1Element = document.querySelector('.card1');
         const card2Element = document.querySelector('.card2');
-        const opponentCardsElement = document.querySelector('.opponentCards');
-        const opponentCardsElement2 = document.querySelector('.opponentCards.rightTilt');
+        const opponentCardsElements = document.querySelectorAll('.opponentCards');
 
-        if (card1Element && card2Element && opponentCardsElement) {
-          card1Element.classList.add('card-display');
-          card2Element.classList.add('card-display');
-          opponentCardsElement.classList.add('card-display');
-          opponentCardsElement2.classList.add('card-display');
+        if (card1Element && card2Element) {
+            card1Element.classList.add('card-display');
+            card2Element.classList.add('card-display');
+        }
+
+        if (opponentCardsElements) {
+            opponentCardsElements.forEach(element => {
+                element.classList.add('card-display');
+            });
         }
         setTimeout(this.giveMyCards, 1000);
       },
@@ -249,12 +270,7 @@
         const card1Element = document.querySelector('.card1');
         const card2Element = document.querySelector('.card2');
 
-        const card1Src = 'assets/img/' + this.myInfo.card1;
-        const card2Src = 'assets/img/' + this.myInfo.card2;
-
         if (card1Element && card2Element) {
-          card1Element.src = card1Src;
-          card2Element.src = card2Src;
           console.log(this.myInfo.card1, this.myInfo.card2)
         }
 
@@ -277,10 +293,11 @@
         const choice = 'RAISE';
 
         range.value = range.min;
+        let value = document.querySelector('.raise-value');
+        value.innerHTML = range.value;
         this.socket.send(JSON.stringify({ type: 'playTurn', room: this.id, choice, currentBet: this.currentBet, raiseNumber, allIn }));
       },
       
-
       async getHost() {
         try {
           if(!this.id){this.id = this.$route.params.id}
@@ -301,7 +318,43 @@
 
       startGame() {
         this.socket.send(JSON.stringify({ type: 'startGame', room: this.id }));
+      },
+
+      cardsOnTable(cards) {
+        this.communityCards = cards;
+        const tableCards = document.querySelectorAll('.comCard');
+        console.log(this.communityCards);
+
+        if (tableCards) {
+          for (let i = 0; i < tableCards.length; i++) {
+            const element = tableCards[i];
+            if (i < this.communityCards.length) {
+              element.classList.add('card-visible');
+              element.src = "/img/" + this.communityCards[i];
+            } else {
+              element.classList.remove('card-visible');
+            }
+          }
+        }
+
+      },
+
+      getCardImage(card, myCart = false) {
+        const basePath = '/img/';
+        if(card){
+
+          if(this.showdown || myCart) return `${basePath}${card}`;
+
+          return `${basePath}back.png`
+        }
+        return `${basePath}back.png`
+      },
+
+      results(hands) {
+        console.log(hands);
       }
+
+
     },
 
     created() {
@@ -324,9 +377,24 @@
         if(this.allUsers.length === 0) {
           return this.otherPlayers.filter(user => user.name !== this.playerName);
         }
-        this.myInfo = this.allUsers.filter(user => user.name === this.playerName)[0];
-        this.chips = this.myInfo.chips
-        return this.allUsers.filter(user => user.name !== this.playerName);
+        const myIndex = this.allUsers.findIndex(user => user.name === this.playerName);
+
+        if (myIndex !== -1) {
+          const clockwiseOrder = [
+              ...this.allUsers.slice(myIndex),
+              ...this.allUsers.slice(0, myIndex)
+          ];
+
+          this.allUsers = clockwiseOrder;
+
+          this.myInfo = this.allUsers[0];
+          this.chips = this.myInfo.chips;
+        }
+
+        return this.allUsers.slice(1);
+        // this.myInfo = this.allUsers.filter(user => user.name === this.playerName)[0];
+        // this.chips = this.myInfo.chips
+        // return this.allUsers.filter(user => user.name !== this.playerName);
       },
     },
 
@@ -361,8 +429,8 @@
     /* align-items: center; */
   }
   .table {
-    height:calc(50vh);
-    width:calc(70vw);
+    height: 50vh;
+    width:70vw;
     background-color: #053e05;
     border: 10px solid #fff;
     border-radius: 70px;
@@ -610,6 +678,24 @@
 
   .animate-card {
     animation: rotateCard 0.5s ease-in-out;
+  }
+  .communityCards {
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 45vh;
+    width:70vw;
+    gap: 3em;
+
+  }
+  .comCard{
+    width: 5vw;
+    visibility: hidden;
+  }
+  .card-visible {
+    visibility: visible;
   }
 
   .raiseContainer {

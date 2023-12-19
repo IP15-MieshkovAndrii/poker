@@ -1,4 +1,5 @@
 const Deck = require("./Deck.js");
+const HandEvaluator = require("./HandEvaluation.js");
 
 class PokerTable {
     constructor() {
@@ -10,13 +11,13 @@ class PokerTable {
       this.bigBlind = 2;
       this.currentPlayer = 0;
       this.potSize = 0;
-      this.leftUntilEnd = this.players.length;
+      this.leftUntilEnd = this.players.length - 1;
       this.round = 1;
     }
   
     addPlayer(player) {
       this.players.push(player);
-      this.leftUntilEnd = this.players.length;
+      this.leftUntilEnd = this.players.length - 1;
     }
 
     getPlayers() {
@@ -54,7 +55,7 @@ class PokerTable {
       }
     }
 
-    emitPlayers(){
+    emitPlayers() {
       let returnArr = [];
       let dealerIndex = this.dealerIndex;
       let pot = this.potSize;
@@ -86,9 +87,25 @@ class PokerTable {
           });
       }
       return  returnArr;
-  }
+    }
   
     evaluateRound() {
+      const evaluation = new HandEvaluator(this.communityCards);
+      const playerHands = this.getPlayersHands();
+
+      const bestHands = evaluation.returnBestHand(playerHands);
+
+      const bestPlayers = [];
+
+      for (let i = 0; i < this.players.length; i++) {
+        if (bestHands.includes(playerHands[i])) {
+          const message = evaluation.evaluateHandForString(playerHands[i]);
+          const playerName = this.players[i].getName();
+          bestPlayers.push({name: playerName, message});
+        }
+      }
+    
+      return bestPlayers;
     }
 
     setDealer(dealer) {
@@ -151,6 +168,35 @@ class PokerTable {
 
     setRound(i) {
       this.round = i;
+    }
+
+    setCommunityCards(number) {
+      for (let i = 0; i < number; i++) {
+        const card = this.deck.dealCard();
+        this.communityCards.push(card)
+      }
+    }
+
+    getCommunityCards() {
+      let cards = [];
+
+      if(this.communityCards.length > 0) {
+        for (const card of this.communityCards) {
+          cards.push(card.cardToPNG())
+        }
+      }
+
+      return cards;
+    }
+
+    getPlayersHands() {
+      const playerHands = [];
+
+      for (const player of this.players) {
+        playerHands.push(player.getHand());
+      }
+
+      return playerHands;
     }
   }
   

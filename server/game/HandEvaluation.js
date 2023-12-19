@@ -1,10 +1,10 @@
-const Card = require("./Сard.js");
+const Card = require("./card.js");
 
 const tenNegTwo = .01;
 const tenNegFour = .0001;
 const tenNegSix = .000001;
 const tenNegEight = .00000001;
-const tenNegTen = .0000000001;
+const tenNegTen = .0000000001; 
 
 class HandEvaluator{
     constructor(communityCards){
@@ -34,19 +34,19 @@ class HandEvaluator{
                 result = this.returnStraightNumber(hand);
                 break;
         
-            case this.returnTripsNumber(hand) !== null:
+            case this.returnTripsNumber(hand) !== 0:
                 result = this.returnTripsNumber(hand);
                 break;
         
-            case this.returnTwoPairNumber(hand) !== null:
+            case this.returnTwoPairNumber(hand) !== 0:
                 result = this.returnTwoPairNumber(hand);
                 break;
         
-            case this.returnPairNumber(hand) !== null:
+            case this.returnPairNumber(hand) !== 0:
                 result = this.returnPairNumber(hand);
                 break;
         
-            case this.returnHighCardNumber(hand) !== null:
+            case this.returnHighCardNumber(hand) !== 0:
                 result = this.returnHighCardNumber(hand);
                 break;
         
@@ -63,21 +63,18 @@ class HandEvaluator{
         let bestHandNumber = 0;
       
         hands.forEach(hand => {
-          const currentHandNumber = this.evaluateHandNumberValue(hand);
-      
-          if (currentHandNumber > bestHandNumber) {
-            bestHandNumber = currentHandNumber;
-            bestHands = [hand];
-          } else if (currentHandNumber === bestHandNumber) {
-            bestHands.push(hand);
-          }
+            const currentHandNumber = this.evaluateHandNumberValue(hand);
+            console.log('Hand: ', hand)
+            console.log('Hand number: ', currentHandNumber)
+            if (currentHandNumber > bestHandNumber) {
+                bestHandNumber = currentHandNumber;
+                bestHands = [hand];
+            } else if (currentHandNumber === bestHandNumber) {
+                bestHands.push(hand);
+            }
         });
       
         return bestHands.length > 0 ? bestHands : null;
-    }
-
-    evaluateHandForString(hand) {
-
     }
 
     returnHighCardNumber(hand) {
@@ -561,6 +558,75 @@ class HandEvaluator{
         cards[j] = hand[1];
         cards = this.insertionSort(cards);
         return cards
+    }
+
+    evaluateHandForString(hand) {
+        if (this.cardsOnBoard.length == 0) {
+            if (hand[0].getNumber() > hand[1].getNumber()) {
+                return "High Card: " + hand[0].cardToString() + ", " + hand[1].cardToString();
+            } else if (hand[0].getNumber() < hand[1].getNumber()) {
+                return "High Card: " + hand[1].cardToString() + ", " + hand[0].cardToString();
+            } else {
+                return "Pair of: " + Card.numberToString(hand[0].getNumber()) + "'s";
+            }
+        } else {
+            let handNum = this.evaluateHandNumberValue(hand);
+
+            if (handNum > 8) {
+                let topOfStraight = Math.floor((handNum.toFixed(2) - Math.floor(handNum)) * 100);
+
+                return "Straight Flush: " + Card.numberToString(topOfStraight) + " to " + Card.numberToString(topOfStraight - 4);
+            } else if (handNum > 7) {
+                let QuadsNum = Math.floor((handNum.toFixed(2) - Math.floor(handNum)) * 100);
+                let highCard = ((handNum.toFixed(4) - handNum.toFixed(2)) * 10000).toFixed();
+
+                return "Four of a Kind: " + Card.numberToString(QuadsNum) + "'s, " + Card.numberToString(highCard) + " high";
+            } else if (handNum > 6) {
+                let tripsNum = Math.floor((handNum.toFixed(2) - Math.floor(handNum)) * 100);
+                let pairNum = ((handNum.toFixed(4) - handNum.toFixed(2)) * 10000).toFixed();
+
+                return "Full House: " + Card.numberToString(tripsNum) +"'s full of " + Card.numberToString(pairNum) + "'s";
+            } else if (handNum > 5) {
+                let highestFlushCard = ((handNum.toFixed(2) - Math.floor(handNum)) * 100).toFixed();
+                let secondFlushCard = ((handNum.toFixed(4) - handNum.toFixed(2)) * 10000).toFixed();
+                let thirdFlushCard = ((handNum.toFixed(6) - handNum.toFixed(4)) *  1000000).toFixed();
+                let fourthFlushCard = ((handNum.toFixed(8) - handNum.toFixed(6)) * 100000000).toFixed();
+                let fifthFlushCard = ((handNum.toFixed(10) - handNum.toFixed(8)) * 10000000000).toFixed();
+
+                return "Flush: " + Card.numberToString(highestFlushCard) + ", " + Card.numberToString(secondFlushCard) + ", " + Card.numberToString(thirdFlushCard) + ", " + Card.numberToString(fourthFlushCard) + ", " + Card.numberToString(fifthFlushCard);
+            } else if(handNum > 4) {
+                let straightCard = ((handNum.toFixed(2) - Math.floor(handNum)) * 100).toFixed();
+
+                return "Straight: " + Card.numberToString(straightCard) + " to " + Card.numberToString(straightCard - 4);
+            } else if (handNum > 3) {
+                let tripsNum = ((handNum.toFixed(2) - Math.floor(handNum)) * 100).toFixed();
+                let highCard = ((handNum.toFixed(4) - handNum.toFixed(2)) * 10000).toFixed();
+                let secondHighCard = ((handNum.toFixed(6) - handNum.toFixed(4)) *  1000000).toFixed();
+
+                return "Three of a Kind: " + Card.numberToString(tripsNum) + "'s, " + Card.numberToString(highCard) + ", " + Card.numberToString(secondHighCard) + " high";
+            } else if (handNum > 2) {
+                let highPair = ((handNum.toFixed(2) - Math.floor(handNum)) * 100).toFixed();
+                let lowPair = ((handNum.toFixed(4) - handNum.toFixed(2)) * 10000).toFixed();
+                let highCard = ((handNum.toFixed(6) - handNum.toFixed(4)) *  1000000).toFixed();
+
+                return "Two Pair: " + Card.numberToString(highPair) + "'s & " + Card.numberToString(lowPair) + "'s, " + Card.numberToString(highCard) + " high";
+            } else if (handNum > 1) {
+                let pair = ((handNum.toFixed(2) - Math.floor(handNum)) * 100).toFixed();
+                let highCard = ((handNum.toFixed(4) - handNum.toFixed(2)) * 10000).toFixed();
+                let secondHighCard = ((handNum.toFixed(6) - handNum.toFixed(4)) *  1000000).toFixed();
+                let thirdHighCard = ((handNum.toFixed(8) - handNum.toFixed(6)) * 100000000).toFixed(); 
+
+                return "Pair of: " + Card.numberToString(pair) + "'s, " + Card.numberToString(highCard) + ", " + Card.numberToString(secondHighCard) + ", " + Card.numberToString(thirdHighCard) + " high";
+            } else  {
+                let highCard = ((handNum.toFixed(2) - Math.floor(handNum)) * 100).toFixed();
+                let secondHighCard = ((handNum.toFixed(4) - handNum.toFixed(2)) * 10000).toFixed();
+                let thirdHighCard = ((handNum.toFixed(6) - handNum.toFixed(4)) *  1000000).toFixed();
+                let fourthHighCard = ((handNum.toFixed(8) - handNum.toFixed(6)) * 100000000).toFixed();
+                let fifthHighCard = ((handNum.toFixed(10) - handNum.toFixed(8)) * 10000000000).toFixed();
+
+                return "High Card: " + Card.numberToString(highCard) + ", " + Card.numberToString(secondHighCard) + ", " + Card.numberToString(thirdHighCard) + ", " + Card.numberToString(fourthHighCard) + ", " + Card.numberToString(fifthHighCard);
+            }
+        }
     }
 
 

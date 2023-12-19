@@ -106,7 +106,6 @@ const socketHandler = (ws) => {
           pokerTable.newHands();
 
           const emitPlayers = pokerTable.emitPlayers();
-          console.log(emitPlayers);
 
           const users = players.map(player => player.name);
           
@@ -150,7 +149,7 @@ const socketHandler = (ws) => {
           bet = currentPlayer.getCurrentBet()
 
           if (leftUntilEnd === 0) {
-            pokerTable.setLeftUntilEnd(players.length)
+            pokerTable.setLeftUntilEnd(players.length - 1)
             pokerTable.setRound(round+1);
             roundEnd = true;
           } else {
@@ -162,6 +161,50 @@ const socketHandler = (ws) => {
 
           const response = JSON.stringify({ type: 'playTurn', id: room, name, emitPlayers, message, roundEnd, bet});
           ws.clients.forEach(client => client.send(response, { binary: false }));
+        } else if (data.type === 'newRound') {
+          const {room} = data;
+
+          let pokerTable = sockets.getPokerGame(room);
+          let round = pokerTable.getRound();
+          let communityCards = [];
+          let showdown = false;
+          let response = '';
+          let bestHands = [];
+          let playerHands = pokerTable.getPlayersHands();
+
+          if (round === 2) {
+            communityCards = pokerTable.getCommunityCards();
+            if(communityCards.length === 0) {
+              pokerTable.setCommunityCards(3);
+              communityCards = pokerTable.getCommunityCards();
+            }
+          } else if (round === 3) {
+            communityCards = pokerTable.getCommunityCards();
+            if(communityCards.length === 3) {
+              pokerTable.setCommunityCards(1);
+              communityCards = pokerTable.getCommunityCards();
+            }
+          } else if (round === 4) {
+            communityCards = pokerTable.getCommunityCards();
+            if(communityCards.length === 4) {
+              pokerTable.setCommunityCards(1);
+              communityCards = pokerTable.getCommunityCards();
+            }
+          } else if (round === 5) {
+            communityCards = pokerTable.getCommunityCards();
+            showdown = true;
+            bestHands = pokerTable.evaluateRound();
+          }
+
+          if (!showdown) {
+            response = JSON.stringify({ type: 'newRound', id: room, communityCards});
+          } else {
+            console.log('Best hands', bestHands)
+            console.log('Player hands', playerHands)
+            response = JSON.stringify({ type: 'showDown', id: room, bestHands, playerHands});
+          }
+
+          ws.clients.forEach(client => client.send(response, { binary: false }));
         }
 
     
@@ -170,10 +213,6 @@ const socketHandler = (ws) => {
         console.log(`Disconnected ${ip}`);
         sockets.leaveRoom(ws);
       });
-
-
-
-  
     });
   };
   
