@@ -23,8 +23,8 @@
             <p>
               <span class="myName">You</span><br>
               <span class="myStack">{{chips}}</span>
-              <div class="tooltip" :class="{'visible': playerName === tooltipName}">
-                {{tooltipText}}
+              <div v-for="(name, index) in tooltipName" class="tooltip" :class="{'visible': playerName === name}">
+                <span v-html="tooltipText[index].replace(/\r\n/g, '<br>')"></span>
               </div>
             </p>
           </div>
@@ -39,9 +39,9 @@
               <img class="myDealerChip" :class="{ 'dealer-active': user.name === dealer }" src="/img/DEALER-CHIP.png">
               <p>
                 <span class="opponentPlayerName">{{ user.name }}</span><br>
-                <span class="opponentStackSize">{{user.chips || 2000}}</span>
-                <div class="tooltip" :class="{'visible': user.name === tooltipName}">
-                  {{tooltipText}}
+                <span class="opponentStackSize">{{+user.chips || 2000}}</span>
+                <div v-for="(name, index) in tooltipName" class="tooltip" :class="{'visible': user.name === name}">
+                  <span v-html="tooltipText[index].replace(/\r\n/g, '<br>')"></span>
                 </div>
               </p>
             </div>
@@ -52,12 +52,12 @@
         <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer)" @click="myTurn('FOLD')">FOLD</button>
         <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer) || (myInfo.moneyIn < currentBet)" @click="myTurn('CHECK')">CHECK</button>
         <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer) || (myInfo.moneyIn >= currentBet)" @click="myTurn('CALL')">CALL</button>
-        <button :disabled="myInfo.isTurn !== true" @click="doRaise">RAISE</button>
+        <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer)" @click="doRaise">RAISE</button>
         <button class="red" @click="leaveRoom">LEAVE</button>
       </div>
       <div class="raiseContainer">
-        <input type="range" orient="vertical" min="2" max="150" value="2" class="slider" id="myRange">
-        <span class="raise-value"></span>
+        <input v-model="raiseValue" type="range" orient="vertical" min="0" :max="chips" value="2" class="slider" id="myRange">
+        <span v-text="total" class="raise-value"></span>
       </div>
       <div class="svg-container" @click="toggleTokenVisibility">
         <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="30" viewBox="0,0,256,256">
@@ -90,14 +90,15 @@
           dealer: '',
           myInfo: '',
           chips: 2000,
-          tooltipName: '',
-          tooltipText: '',
+          tooltipName: [],
+          tooltipText: [],
           potSize: 0,
           currentPlayer: '',
           currentBet: 0,
           maxRaise: Math.min(150, this.chips),
           communityCards: [],
           showdown: false,
+          raiseValue: 0,
         };
     },
     methods: {
@@ -116,22 +117,18 @@
         sessionStorage.clear();
       },
 
-      getUsers() {
-        this.socket.send(JSON.stringify({ type: 'getUsersInRoom', room: this.id }));
-      },
-
       handleSocketMessage(event) {
         const data = JSON.parse(event.data);
         if(this.id === data.id){
           if (data.type === 'usersInRoom') {
-            const array = data.users;
-            const objectArray = array.map(name => ({
-              name: name,
-              chips: 2000
-            }));
-            this.otherPlayers = objectArray;
+            this.allUsers = data.emitPlayers.slice(2);
+            console.log('emit',data.emitPlayers.slice(2))
+            console.log('allusers',this.allUsers);
           } else if (data.type === 'gameBegun') {
+            this.cardsOnTable([]);
             this.gameStarted = true;
+            this.showdown = false;
+            this.noCards();
             const dealerIndex = data.emitPlayers[0];
             setTimeout(() => {
               this.dealer = data.users[dealerIndex];
@@ -139,6 +136,7 @@
               console.log('Dealer assigned:', this.dealer);
               const str = 'Dealer assigned:' + this.dealer;
 
+              this.sliceToolTip(1);
               this.setToolTip(str, this.dealer)
 
             }, 1000);
@@ -155,10 +153,12 @@
             this.allUsers = emitPlayers.slice(2);
             this.potSize = data.emitPlayers[1];
             this.currentBet = data.bet;
+            this.sliceToolTip(1);
             this.setToolTip(data.message, data.name);
 
+
             setTimeout(() => {
-              if(this.tooltipName === data.name) this.setToolTip('', '');
+              if(this.tooltipName[0] === data.name) this.sliceToolTip(1);
             }, 2200);
 
             if (data.roundEnd) {
@@ -174,9 +174,48 @@
             this.currentPlayer = this.allUsers.find(user => user.isTurn === true).name;
             this.cardsOnTable(data.communityCards);
           } else if (data.type === 'showDown') {
-            this.currentPlayer = '';
-            this.showdown = true;
-            setTimeout(this.results(data.bestHands), 2000);
+            if(data.foldWin == true) {
+              const emitPlayers = data.emitPlayers;
+              const before = emitPlayers[0];
+              const after = emitPlayers[1]
+              this.allUsers = before.slice(2);
+
+              setTimeout(() => {
+                this.sliceToolTip(1);
+                this.setToolTip('WIN', data.bestHands);
+
+                setTimeout(() => {
+                  this.currentPlayer = '';
+                  this.showdown = true;
+                  this.potSize = after[1];
+                  this.allUsers = after.slice(2);
+                }, 1000)
+              }, 1000);
+            } else {
+              setTimeout(() => {
+                this.currentPlayer = '';
+                this.showdown = true;
+                this.results(data.bestHands);
+
+                const emitPlayers = data.emitPlayers;
+                this.potSize = emitPlayers[1];
+                this.allUsers = emitPlayers.slice(2);
+              }, 2000);
+            }
+
+            if(this.isHost) {
+              setTimeout(() => {
+
+                this.socket.send(JSON.stringify({ type: 'startGame', room: this.id }));
+              }, 6000)
+            }
+
+
+          } else if (data.type === 'gameEnd') {
+            setTimeout(() => {
+              this.sliceToolTip(1);
+              this.setToolTip('WINNER', data.winner);
+              }, 2000);
           }
         }
       },
@@ -201,7 +240,8 @@
           this.currentPlayer = currentName;
 
           const str = 'Small blind: 1 chip';
-          this.setToolTip(str, currentName)
+          this.sliceToolTip(1);
+          this.setToolTip(str, currentName);
 
           this.potSize += 1;
 
@@ -216,21 +256,20 @@
           this.currentPlayer = currentName;
 
           const str = 'Big blind: 2 chips';
-          this.setToolTip(str, currentName)
-
+          this.sliceToolTip(1);
+          this.setToolTip(str, currentName);
           this.potSize += 2;
-
           this.currentBet = 2;
 
         }, bT);
 
         setTimeout(() => {
-          this.setToolTip()
+          this.sliceToolTip(1);
 
           this.currentPlayer = '';
 
           this.giveCards();
-        }, bT+2200);
+        }, bT+2000);
 
         setTimeout(() => {
 
@@ -243,9 +282,13 @@
 
       },
 
-      setToolTip(str='', name='') {
-        this.tooltipName = name;
-        this.tooltipText = str;
+      setToolTip(str, name) {
+        this.tooltipName.push(name)
+        this.tooltipText.push(str);
+      },
+      sliceToolTip(i) {
+        this.tooltipName = this.tooltipName.slice(i);
+        this.tooltipText = this.tooltipText.slice(i);
       },
 
       giveCards() {
@@ -259,42 +302,44 @@
         }
 
         if (opponentCardsElements) {
-            opponentCardsElements.forEach(element => {
-                element.classList.add('card-display');
-            });
+          opponentCardsElements.forEach(element => {
+              element.classList.add('card-display');
+          });
         }
-        setTimeout(this.giveMyCards, 1000);
       },
 
-      giveMyCards() {
+      noCards() {
         const card1Element = document.querySelector('.card1');
         const card2Element = document.querySelector('.card2');
+        const opponentCardsElements = document.querySelectorAll('.opponentCards');
 
         if (card1Element && card2Element) {
-          console.log(this.myInfo.card1, this.myInfo.card2)
+            card1Element.classList.remove('card-display');
+            card2Element.classList.remove('card-display');
         }
 
-        card1Element.classList.add('animate-card');
-        card2Element.classList.add('animate-card');
+        if (opponentCardsElements) {
+          opponentCardsElements.forEach(element => {
+              element.classList.remove('card-display');
+          });
+        }
       },
+
 
       myTurn(choice) {
         this.socket.send(JSON.stringify({ type: 'playTurn', room: this.id, choice, currentBet: this.currentBet }));
       },
 
       doRaise() {
-        let range = document.querySelector('.slider');
-        let raiseNumber = range.value;
+        let raiseNumber = this.raiseValue;
         let allIn = false;
-        if (raiseNumber === 'ALL IN') {
-          raiseNumber = this.chips;
+        if (raiseNumber === this.chips) {
           allIn = true;
         }
         const choice = 'RAISE';
 
-        range.value = range.min;
-        let value = document.querySelector('.raise-value');
-        value.innerHTML = range.value;
+        this.raiseValue = 0;
+        
         this.socket.send(JSON.stringify({ type: 'playTurn', room: this.id, choice, currentBet: this.currentBet, raiseNumber, allIn }));
       },
       
@@ -317,13 +362,16 @@
       },
 
       startGame() {
-        this.socket.send(JSON.stringify({ type: 'startGame', room: this.id }));
+        console.log('Players', this.allUsers);
+        if(this.allUsers && this.allUsers.length > 1) {
+          this.socket.send(JSON.stringify({ type: 'startGame', room: this.id }));
+        }
+
       },
 
       cardsOnTable(cards) {
         this.communityCards = cards;
         const tableCards = document.querySelectorAll('.comCard');
-        console.log(this.communityCards);
 
         if (tableCards) {
           for (let i = 0; i < tableCards.length; i++) {
@@ -351,20 +399,21 @@
       },
 
       results(hands) {
-        console.log(hands);
+        for (let i = 0; i < hands.length; i++) {
+          const hand = hands[i];
+          this.setToolTip(hand.message, hand.name);
+        }
       }
-
 
     },
 
     created() {
       this.socket.addEventListener('open', () => {
         this.handleSocketOpen();
-        this.getUsers();
       } );
       this.socket.addEventListener('close', () => {
         console.log('Closed');
-        this.getUsers();
+
       });
       this.socket.addEventListener('message', (event) => {
         this.handleSocketMessage(event);
@@ -373,9 +422,8 @@
 
     computed: {
       users() {
-        if(this.otherPlayers && this.otherPlayers.length === 1) return [];
         if(this.allUsers.length === 0) {
-          return this.otherPlayers.filter(user => user.name !== this.playerName);
+          return [];
         }
         const myIndex = this.allUsers.findIndex(user => user.name === this.playerName);
 
@@ -385,36 +433,23 @@
               ...this.allUsers.slice(0, myIndex)
           ];
 
-          this.allUsers = clockwiseOrder;
+          console.log('Clockwiser', clockwiseOrder)
 
+          if(clockwiseOrder)this.allUsers = clockwiseOrder;
+          
           this.myInfo = this.allUsers[0];
           this.chips = this.myInfo.chips;
+          document.querySelector('.slider').max = this.chips;
         }
 
         return this.allUsers.slice(1);
-        // this.myInfo = this.allUsers.filter(user => user.name === this.playerName)[0];
-        // this.chips = this.myInfo.chips
-        // return this.allUsers.filter(user => user.name !== this.playerName);
       },
+
+      total() {
+
+        return this.raiseValue !== this.chips ? this.raiseValue : 'ALL-IN';
+      }
     },
-
-    mounted() {
-
-      let range = document.querySelector('.slider');
-      let value = document.querySelector('.raise-value');
-      let maxChips = this.chips;
-
-      range.max = maxChips;
-      value.innerHTML = range.value;
-
-      range.addEventListener('input', function(event) {
-        if (event.target.value == maxChips) {
-          value.innerHTML = 'ALL IN';
-        } else {
-          value.innerHTML = event.target.value;
-        }
-      });
-    }
   };
   </script>
   
@@ -629,16 +664,17 @@
     color: black;
     text-align: center;
     border-radius: 6px;
-    padding: 5px 0;
     position: absolute;
     z-index: 1;
     top: 130%;
-    left: 2.2vw;
-    margin-left: -60px;
+    left: -4.5vw;
     text-transform: none;
     padding: 1em;
     font-weight: 700;
+  }
 
+  .myPlayer .tooltip {
+    left: -3.5vw;
   }
 
   .tooltip::after {
@@ -676,9 +712,7 @@
     animation: appearFromTop 0.5s ease-in-out;
   }
 
-  .animate-card {
-    animation: rotateCard 0.5s ease-in-out;
-  }
+
   .communityCards {
     position: absolute;
     display: flex;
@@ -769,9 +803,5 @@
     }
   }
 
-  @keyframes rotateCard {
-    from {transform: rotateY(0)}
-    to   {transform: rotateY(360)}
-  }
   </style>
   

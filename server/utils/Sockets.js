@@ -28,6 +28,10 @@ class Sockets {
   
     leaveRoom(ws) {
         const {room, nickname} = ws;
+
+        let pokerTable = this.getPokerGame(room);
+        if (pokerTable) pokerTable.leaveGame(nickname);
+
         if (this.rooms[room] && this.rooms[room].users) {
             const userIndex = this.rooms[room].users.findIndex(user => user.ws === ws);
             if (userIndex !== -1) {
@@ -52,6 +56,10 @@ class Sockets {
         this.rooms[room].game = flag;
     }
 
+    isBegun(room) {
+        return this.rooms[room].game
+    }
+
     setPokerGame(room, poker) {
         this.rooms[room].poker = poker;
     }
@@ -60,7 +68,21 @@ class Sockets {
         if(!this.rooms[room]) return null;
         return this.rooms[room].poker;
     }
-  }
+
+    isClientInRoom(client, room) {
+        if (this.rooms[room] && this.rooms[room].users) {
+            return this.rooms[room].users.some(user => user.ws === client);
+        }
+        return false;
+    }
+
+    isNicknameExist(nickname, room) {
+        if (this.rooms[room] && this.rooms[room].users) {
+            return this.rooms[room].users.some(user => user.nickname === nickname);
+        }
+        return false;
+    }
+}
   
-  module.exports = Sockets;
+module.exports = Sockets;
   

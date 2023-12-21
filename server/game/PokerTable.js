@@ -35,10 +35,6 @@ class PokerTable {
 
       if (playerIndex !== -1) {
         this.players.splice(playerIndex, 1);
-
-        if (playerName === this.dealer) {
-          this.nextDealer();
-        }
       }
     }
 
@@ -91,15 +87,15 @@ class PokerTable {
   
     evaluateRound() {
       const evaluation = new HandEvaluator(this.communityCards);
-      const playerHands = this.getPlayersHands();
-
+      let playerHands = this.getPlayersHands();
+      // console.log('playerHands', playerHands)
       const bestHands = evaluation.returnBestHand(playerHands);
-
+      console.log('bestHands', bestHands)
       const bestPlayers = [];
 
       for (let i = 0; i < this.players.length; i++) {
         if (bestHands.includes(playerHands[i])) {
-          const message = evaluation.evaluateHandForString(playerHands[i]);
+          const message = 'WIN \r\n' + evaluation.evaluateHandForString(playerHands[i]);
           const playerName = this.players[i].getName();
           bestPlayers.push({name: playerName, message});
         }
@@ -110,6 +106,10 @@ class PokerTable {
 
     setDealer(dealer) {
       this.dealerIndex = dealer;
+    }
+
+    getDealer() {
+      return this.dealerIndex;
     }
 
     changePot(amount) {
@@ -177,6 +177,10 @@ class PokerTable {
       }
     }
 
+    resetCommunityCards() {
+      this.communityCards = []
+    }
+
     getCommunityCards() {
       let cards = [];
 
@@ -191,12 +195,34 @@ class PokerTable {
 
     getPlayersHands() {
       const playerHands = [];
+      let players = this.players.filter(player => !player.getHasFolded())
 
-      for (const player of this.players) {
+      for (const player of players) {
         playerHands.push(player.getHand());
       }
 
       return playerHands;
+    }
+
+    newGame() {
+      this.resetCommunityCards();
+      this.deck = new Deck();
+      this.setRound(1);
+      this.setLeftUntilEnd(this.players.length - 1);
+
+      let oldDealer = this.players[this.dealerIndex].getName();
+
+      this.players = this.players.filter(player => player.getChips() !== 0);
+      for (const player of this.players) {
+        player.newPlayerGame();
+      }
+
+      const oldDealerIsStillPlayer = this.players.findIndex(player => player.getName() === oldDealer)
+      if (oldDealerIsStillPlayer) {
+        this.dealerIndex = oldDealerIsStillPlayer;
+        this.nextDealer();
+      }
+
     }
   }
   

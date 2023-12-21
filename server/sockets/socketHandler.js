@@ -15,48 +15,36 @@ const socketHandler = (ws) => {
 
         if (data.type === 'joinRoom') {
           const { room, nickname } = data;
-          sockets.joinRoom(room, nickname, ws);
 
-          let pokerTable = null;
+          if(!sockets.isNicknameExist(nickname, room)){
+            sockets.joinRoom(room, nickname, ws);
 
-          if(!sockets.getPokerGame(room)){
-            pokerTable = new PokerTable();
-            sockets.setPokerGame(room, pokerTable)
-          } else {
-            pokerTable = sockets.getPokerGame(room);
-          }
-          let pokerPlayer = new PokerPlayer(nickname, 2000)
-          pokerTable.addPlayer(pokerPlayer);
-          
-          for (const client of ws.clients) {
-            if (client.readyState !== WebSocket.OPEN) continue;
-            if (client === connection) continue;
-            client.send(message, { binary: false });
+            let pokerTable = null;
+  
+            if(!sockets.getPokerGame(room)){
+              pokerTable = new PokerTable();
+              sockets.setPokerGame(room, pokerTable)
+            } else {
+              pokerTable = sockets.getPokerGame(room);
+            }
+            let pokerPlayer = new PokerPlayer(nickname, 2000)
+            pokerTable.addPlayer(pokerPlayer);
+            const emitPlayers = pokerTable.emitPlayers();
+
+            const response = JSON.stringify({ type: 'usersInRoom', id: room, emitPlayers});
+            ws.clients.forEach(client => client.send(response, { binary: false }));
           }
         } else if (data.type === 'leaveRoom') {
           const { room, nickname } = data;
 
-          sockets.leaveRoom(room, nickname, ws);
-
-          const usersInRoom = sockets.getUsersInRoom(room).users;
-          const users = [];
-          if(usersInRoom && usersInRoom.length) {
-            for (const player of usersInRoom) {
-              users.push(player.nickname);
-            }
-          }
+          sockets.leaveRoom(ws);
 
           let pokerTable = sockets.getPokerGame(room);
-          if (pokerTable) pokerTable.leaveGame();
+          if(pokerTable) {
+            const emitPlayers = pokerTable.emitPlayers();
 
-
-          const response = JSON.stringify({ type: 'usersInRoom', users: usersInRoom });
-          ws.clients.forEach(client => client.send(response, { binary: false }));
-
-          for (const client of ws.clients) {
-            if (client.readyState !== WebSocket.OPEN) continue;
-            if (client === connection) continue;
-            client.send(message, { binary: false });
+            const response = JSON.stringify({ type: 'usersInRoom', id: room, emitPlayers});
+            ws.clients.forEach(client => client.send(response, { binary: false }));
           }
         } else if (data.type === 'getUsersInRoom') {
           const { room } = data;
@@ -65,32 +53,50 @@ const socketHandler = (ws) => {
           for (const player of usersInRoom) {
             users.push(player.nickname);
           }
+          const pokerTable = sockets.getPokerGame(room);
+          const emitPlayers = pokerTable.emitPlayers();
 
-          const response = JSON.stringify({ type: 'usersInRoom', users, id: room});
+          const response = JSON.stringify({ type: 'usersInRoom', id: room, emitPlayers});
           ws.clients.forEach(client => client.send(response, { binary: false }));
-
-          for (const client of ws.clients) {
-            if (client.readyState !== WebSocket.OPEN) continue;
-            if (client === connection) continue;
-            client.send(message, { binary: false });
-          }
         } else if (data.type === 'startGame') {
           const { room } = data;
-          let pokerTable = sockets.getPokerGame(room);
 
-          console.log("Host has started the game in: " + room);
+          let emitPlayers;
+          let users;
+          let pokerTable = sockets.getPokerGame(room);;
+          let players;
+          let dealerIndex;
+          let gameEnd = false;
+          let response;
 
-          for(let currentRoom in sockets.rooms) {
-            if(currentRoom === room) {
-              sockets.setBegun(currentRoom, true);
-              sockets.setPokerGame(currentRoom, pokerTable)
+          let gameStarted = sockets.isBegun(room);
+
+          if(gameStarted) {
+            pokerTable.newGame();
+            players = pokerTable.getPlayers();
+
+            dealerIndex = pokerTable.getDealer();
+
+            if (players.length === 1){
+              gameEnd = true;
+              response = JSON.stringify({ type: 'gameEnd', id: room, winner: players[0].getName()});
             }
+          } else {
+
+            console.log("Host has started the game in: " + room);
+
+            for(let currentRoom in sockets.rooms) {
+              if(currentRoom === room) {
+                sockets.setBegun(currentRoom, true);
+                sockets.setPokerGame(currentRoom, pokerTable)
+              }
+            }
+  
+            players = pokerTable.getPlayers();
+  
+            dealerIndex = Math.floor(Math.random() * players.length);
+            pokerTable.setDealer(dealerIndex)
           }
-
-          const players = pokerTable.getPlayers();
-
-          let dealerIndex = Math.floor(Math.random() * players.length);
-          pokerTable.setDealer(dealerIndex)
 
           let smallBlind = pokerTable.getSmallBlind();
           let bigBlind = pokerTable.getBigBlind();
@@ -98,18 +104,20 @@ const socketHandler = (ws) => {
           let currentPlayer = pokerTable.nextPlayer(dealerIndex);
           smallBlind = players[currentPlayer].blind(smallBlind);
           pokerTable.changePot(smallBlind)
-          bigBlind = players[pokerTable.nextPlayer(currentPlayer)].blind(bigBlind);
-          pokerTable.changePot(bigBlind)
 
-          currentPlayer = pokerTable.nextPlayer(pokerTable.nextPlayer(currentPlayer));
+          currentPlayer = pokerTable.nextPlayer(currentPlayer);
+          bigBlind = players[currentPlayer].blind(bigBlind);
+          pokerTable.changePot(bigBlind);
+
+          currentPlayer = pokerTable.nextPlayer(currentPlayer);
 
           pokerTable.newHands();
 
-          const emitPlayers = pokerTable.emitPlayers();
+          emitPlayers = pokerTable.emitPlayers();
 
-          const users = players.map(player => player.name);
-          
-          const response = JSON.stringify({ type: 'gameBegun', id: room, users, emitPlayers});
+          users = players.map(player => player.name);
+
+          if (!gameEnd) response = JSON.stringify({ type: 'gameBegun', id: room, users, emitPlayers});
           ws.clients.forEach(client => client.send(response, { binary: false }));
         } else if (data.type === 'playTurn') {
           const {room, choice, currentBet} = data;
@@ -124,22 +132,38 @@ const socketHandler = (ws) => {
           let roundEnd = false;
           let bet = 0;
           let name = currentPlayer.name;
+          let response = null;
 
           if (choice === 'FOLD') {
             currentPlayer.fold();
-            message = 'Fold'
+            message = 'Fold';
+
+            const remainingPlayers = players.filter(player => !player.getHasFolded());
+
+            if (remainingPlayers.length === 1) {
+              const emitBefore = pokerTable.emitPlayers();
+
+              let winner = remainingPlayers[0].getName();
+              const pot = pokerTable.resetPot();
+              remainingPlayers[0].win(pot);
+              const emitAfter= pokerTable.emitPlayers();
+              const emitPlayers = [emitBefore, emitAfter];
+
+              response = JSON.stringify({ type: 'showDown', id: room, bestHands: winner, foldWin: true, emitPlayers});
+            }
           } else if (choice === 'CALL') {
             bet = currentBet - currentPlayer.getCurrentBet();
             currentPlayer.call(bet);
-            message = 'Call'
+            message = 'Call';
             pokerTable.changePot(bet)
           } else if (choice === 'CHECK') {
-            message = 'Check'
+            message = 'Check';
           } else if (choice === 'RAISE') {
             const {raiseNumber, allIn} = data;
             bet = raiseNumber;
+            pokerTable.setLeftUntilEnd(players.length - 1);
 
-            if(allIn) message = 'All-in';
+            if (allIn) message = 'All-in';
             else message = 'Raise ' + bet;
 
             currentPlayer.placeBet(+bet);
@@ -159,7 +183,10 @@ const socketHandler = (ws) => {
           pokerTable.nextPlayer(currentPlayerInd);
           const emitPlayers = pokerTable.emitPlayers();
 
-          const response = JSON.stringify({ type: 'playTurn', id: room, name, emitPlayers, message, roundEnd, bet});
+          if(response === null) {
+            response = JSON.stringify({ type: 'playTurn', id: room, name, emitPlayers, message, roundEnd, bet});
+          }
+
           ws.clients.forEach(client => client.send(response, { binary: false }));
         } else if (data.type === 'newRound') {
           const {room} = data;
@@ -170,7 +197,7 @@ const socketHandler = (ws) => {
           let showdown = false;
           let response = '';
           let bestHands = [];
-          let playerHands = pokerTable.getPlayersHands();
+          let players = pokerTable.getPlayers();
 
           if (round === 2) {
             communityCards = pokerTable.getCommunityCards();
@@ -194,24 +221,44 @@ const socketHandler = (ws) => {
             communityCards = pokerTable.getCommunityCards();
             showdown = true;
             bestHands = pokerTable.evaluateRound();
+
+            let pot = pokerTable.resetPot();
+            let amountPerWinner = Math.floor(pot / bestHands.length);
+            let remaining = pot % bestHands.length;
+
+            for (let i = 0; i < bestHands.length; i++) {
+              const playerName = bestHands[i].name;
+              const winningPlayer = players.find(player => player.getName() === playerName);
+            
+              if (winningPlayer) {
+                winningPlayer.win(amountPerWinner);
+              }
+            }
+            pokerTable.changePot(remaining);
           }
 
           if (!showdown) {
             response = JSON.stringify({ type: 'newRound', id: room, communityCards});
           } else {
-            console.log('Best hands', bestHands)
-            console.log('Player hands', playerHands)
-            response = JSON.stringify({ type: 'showDown', id: room, bestHands, playerHands});
+            const emitPlayers = pokerTable.emitPlayers();
+            response = JSON.stringify({ type: 'showDown', id: room, bestHands, foldWin: false, emitPlayers});
           }
 
           ws.clients.forEach(client => client.send(response, { binary: false }));
         }
-
     
       });
       connection.on('close', () => {
         console.log(`Disconnected ${ip}`);
         sockets.leaveRoom(ws);
+        let pokerTable = sockets.getPokerGame(ws.room);
+        if(pokerTable) {
+          const emitPlayers = pokerTable.emitPlayers();
+
+          const response = JSON.stringify({ type: 'usersInRoom', id: ws.room, emitPlayers});
+          ws.clients.forEach(client => client.send(response, { binary: false }));
+        }
+        
       });
     });
   };

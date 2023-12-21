@@ -64,8 +64,6 @@ class HandEvaluator{
       
         hands.forEach(hand => {
             const currentHandNumber = this.evaluateHandNumberValue(hand);
-            console.log('Hand: ', hand)
-            console.log('Hand number: ', currentHandNumber)
             if (currentHandNumber > bestHandNumber) {
                 bestHandNumber = currentHandNumber;
                 bestHands = [hand];
@@ -73,8 +71,9 @@ class HandEvaluator{
                 bestHands.push(hand);
             }
         });
+        console.log('returnBestHand', bestHands);
       
-        return bestHands.length > 0 ? bestHands : null;
+        return bestHands.length > 0 ? bestHands : 0;
     }
 
     returnHighCardNumber(hand) {
@@ -549,14 +548,13 @@ class HandEvaluator{
 
     returnAllSorted(hand) {
         let cards = [];
-        let j = 0;
         for(let i = 0; i < this.currentNumCardsOnBoard(); i++) {
-            cards[i] = this.cardsOnBoard[i];
-            j++;
+            cards.push(this.cardsOnBoard[i]);
         }
-        cards[j++] = hand[0];
-        cards[j] = hand[1];
+        cards.push(hand[0])
+        cards.push(hand[1])
         cards = this.insertionSort(cards);
+        console.log(cards);
         return cards
     }
 

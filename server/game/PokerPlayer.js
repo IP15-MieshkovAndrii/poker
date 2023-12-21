@@ -11,11 +11,7 @@ class PokerPlayer {
       this.hand.push(card);
     }
   
-    placeBet(amount) {
-      if (amount > this.chips) {
-        throw new Error(`Insufficient chips. ${this.name} has ${this.chips} chips.`);
-      }
-  
+    placeBet(amount) {  
       this.chips -= amount;
       this.currentBet += amount;
   
@@ -51,6 +47,10 @@ class PokerPlayer {
       this.hand = [];
     }
 
+    win(pot) {
+      this.chips += pot;
+    }
+
     getHand() {return this.hand;}
 
     getName() {return this.name;}
@@ -60,6 +60,12 @@ class PokerPlayer {
     getCurrentBet() {return this.currentBet;}
 
     getHasFolded() {return this.hasFolded;}
+
+    newPlayerGame() {
+      this.resetHand();
+      this.hasFolded = false;
+      this.resetBet();
+    }
 
 
     
