@@ -61,7 +61,7 @@ class PokerTable {
           currPerson = this.players[i];
           let holeCard1;
           let holeCard2;
-          if(currPerson.getHand()[0] == null){
+          if(currPerson.getHand()[0] === null){
               holeCard1 = "back.png";
               holeCard2 = "back.png"
           }

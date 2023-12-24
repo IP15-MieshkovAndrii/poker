@@ -21,19 +21,7 @@ class Card {
         let suit = this.suit;
         let cardString = "" + number;
     
-    
-        if (suit == 'Spades') {
-            cardString += "S";
-        }
-        if (suit == 'Clubs') {
-            cardString += "C";
-        }
-        if (suit == 'Hearts') {
-            cardString += "H";
-        }
-        if (suit == 'Diamonds') {
-            cardString += "D";
-        }
+        cardString += suit.charAt(0).toUpperCase()
         
         cardString += ".png";
         return cardString;
@@ -41,73 +29,96 @@ class Card {
 
     cardToString() {
         let cardString = "";
-        if (this.rank == 2) {
-            cardString += "Two";
-        } else if (this.rank == 3) {
-            cardString += "Three";
-        } else if (this.rank == 4) {
-            cardString += "Four";
-        } else if (this.rank == 5) {
-            cardString += "Five";
-        } else if (this.rank == 6) {
-            cardString += "Six";
-        } else if (this.rank == 7) {
-            cardString += "Seven";
-        } else if (this.rank == 8) {
-            cardString += "Eight";
-        } else if (this.rank == 9) {
-            cardString += "Nine";
-        } else if (this.rank == 10) {
-            cardString += "Ten";
-        } else if (this.rank == "Jack") {
-            cardString += "Jack";
-        } else if (this.rank == "Queen") {
-            cardString += "Queen";
-        } else if (this.rank == "King") {
-            cardString += "King";
-        } else if (this.rank == "Ace") {
-            cardString += "Ace";
+      
+        switch (this.rank) {
+            case 2:
+                cardString += "Two";
+                break;
+            case 3:
+                cardString += "Three";
+                break;
+            case 4:
+                cardString += "Four";
+                break;
+            case 5:
+                cardString += "Five";
+                break;
+            case 6:
+                cardString += "Six";
+                break;
+            case 7:
+                cardString += "Seven";
+                break;
+            case 8:
+                cardString += "Eight";
+                break;
+            case 9:
+                cardString += "Nine";
+                break;
+            case 10:
+                cardString += "Ten";
+                break;
+            case "Jack":
+                cardString += "Jack";
+                break;
+            case "Queen":
+                cardString += "Queen";
+                break;
+            case "King":
+                cardString += "King";
+                break;
+            case "Ace":
+                cardString += "Ace";
+                break;
         }
-        
-        if(this.suit == 's') {
-            cardString += " of Spades";
-        } else if (this.suit == 'c'){
-            cardString += " of Clubs";
-        } else if (this.suit == 'h') {
-            cardString += " of Hearts";
-        } else if (this.suit == 'd') {
-            cardString += " of Diamonds";
-        }
+      
+        switch (this.suit) {
+            case 'Spades':
+                cardString += " of Spades";
+                break;
+            case 'Clubs':
+                cardString += " of Clubs";
+                break;
+            case 'Hearts':
+                cardString += " of Hearts";
+                break;
+            case 'Diamonds':
+                cardString += " of Diamonds";
+                break;
 
+            
+        }
+      
         return cardString;
-    }
+      }
+      
 
     static numberToString(number){
-        if (number == 2) {
+        if (number === 2) {
             return "Two";
-        } else if(number == 3) {
+        } else if(number === 3) {
             return "Three";
-        } else if (number == 4) {
+        } else if (number === 4) {
             return "Four";
-        } else if (number == 5) {
+        } else if (number === 5) {
             return "Five";
-        } else if (number == 6) {
+        } else if (number === 6) {
             return "Six";
-        } else if(number == 7) {
+        } else if(number === 7) {
             return "Seven";
-        } else if(number == 8) {
+        } else if(number === 8) {
             return "Eight";
-        } else if(number == 9) {
+        } else if(number === 9) {
             return "Nine";
-        } else if (number == 10) {
+        } else if (number === 10) {
             return "Ten";
-        } else if(number == 11) {
+        } else if(number === 11) {
             return "Jack";
-        } else if(number == 12) {
+        } else if(number === 12) {
             return "Queen";
-        } else if(number == 13) {
+        } else if(number === 13) {
             return "King";
-        } if(number == 14) {
+        } if(number === 14) {
             return "Ace";
         }
         return 0;

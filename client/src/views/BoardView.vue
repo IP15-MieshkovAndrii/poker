@@ -50,8 +50,8 @@
       </div>
       <div class="userPanel">
         <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer)" @click="myTurn('FOLD')">FOLD</button>
-        <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer) || (myInfo.moneyIn < currentBet)" @click="myTurn('CHECK')">CHECK</button>
-        <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer) || (myInfo.moneyIn >= currentBet)" @click="myTurn('CALL')">CALL</button>
+        <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer) || (myInfo.moneyIn < currentBet) && (chips !== 0)" @click="myTurn('CHECK')">CHECK</button>
+        <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer) || (myInfo.moneyIn >= currentBet) || (chips === 0)" @click="myTurn('CALL')">CALL</button>
         <button :disabled="(myInfo.isTurn !== true) || (playerName !== currentPlayer)" @click="doRaise">RAISE</button>
         <button class="red" @click="leaveRoom">LEAVE</button>
       </div>
@@ -174,7 +174,7 @@
             this.currentPlayer = this.allUsers.find(user => user.isTurn === true).name;
             this.cardsOnTable(data.communityCards);
           } else if (data.type === 'showDown') {
-            if(data.foldWin == true) {
+            if(data.foldWin === true) {
               const emitPlayers = data.emitPlayers;
               const before = emitPlayers[0];
               const after = emitPlayers[1]

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import LobbyView from '../views/LobbyView.vue';
 import BoardView from '../views/BoardView.vue';
+import ProfileView from '../views/ProfileView.vue'
 
 const routes = [
   {
@@ -12,6 +13,11 @@ const routes = [
     path: '/game/:id',
     name: 'BoardView',
     component: BoardView,
+  },
+  {
+    path: '/profile',
+    name: 'ProfileView',
+    component: ProfileView,
   },
 ];
 

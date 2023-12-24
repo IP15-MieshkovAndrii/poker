@@ -69,13 +69,6 @@ class Sockets {
         return this.rooms[room].poker;
     }
 
-    isClientInRoom(client, room) {
-        if (this.rooms[room] && this.rooms[room].users) {
-            return this.rooms[room].users.some(user => user.ws === client);
-        }
-        return false;
-    }
-
     isNicknameExist(nickname, room) {
         if (this.rooms[room] && this.rooms[room].users) {
             return this.rooms[room].users.some(user => user.nickname === nickname);

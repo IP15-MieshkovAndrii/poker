@@ -1,5 +1,4 @@
-const Card = require("./card.js");
-
+const Card = require("./Card.js");
 const tenNegTwo = .01;
 const tenNegFour = .0001;
 const tenNegSix = .000001;
@@ -110,7 +109,7 @@ class HandEvaluator{
 					pairArr[arrCounter++] = cards[i];
 				}
 
-				if(cards[i].getNumber() == pairCard) {
+				if(cards[i].getNumber() === pairCard) {
 					pairArr[pairArrCounter++] = cards[i];
 				}
             }
@@ -135,13 +134,13 @@ class HandEvaluator{
         let TwoPair = [];
         
         for(let i = cards.length - 2; i >= 0; i--) {
-            if (cards[i+1].getNumber() == cards[i].getNumber()) {
+            if (cards[i+1].getNumber() === cards[i].getNumber()) {
                 twoPairCheck++;
-                if(twoPair11 == 0) {
+                if(twoPair11 === 0) {
                     twoPair11 = i;
                     twoPair12 = i + 1;
                 }
-                else if(twoPair21 == 0) {
+                else if(twoPair21 === 0) {
                     twoPair21 = i;
                     twoPair21 = i + 1;
                     twoPair = true;
@@ -177,10 +176,10 @@ class HandEvaluator{
         let Trips;
         
         for(let i = cards.length - 2; i >= 0; i--) {
-            if(cards[i+1].getNumber() == cards[i].getNumber()) {
+            if(cards[i+1].getNumber() === cards[i].getNumber()) {
                 tripCheck++;
 
-                if(tripCheck == 2) {
+                if(tripCheck === 2) {
                     hasTrips = true;
                     tripCard = cards[i].getNumber();
                     break;
@@ -208,7 +207,7 @@ class HandEvaluator{
                     }
                 }
 
-                if(cards[i].getNumber() == tripCard) {
+                if(cards[i].getNumber() === tripCard) {
                     Trips[newArrCounter++] = cards[i];
                 }
             }
@@ -235,8 +234,8 @@ class HandEvaluator{
         let topIndex = 0;
         
         for(let i = cards.length - 2; i >= 0; i--) {
-            if (i == cards.length - 2) {
-                if (cards[cards.length-1].getNumber() == 14) {
+            if (i === cards.length - 2) {
+                if (cards[cards.length-1].getNumber() === 14) {
                     aceExists = true;
                     acePosition = cards.length - 1;
                 }  
@@ -245,25 +244,25 @@ class HandEvaluator{
                 isStraight = true;
                 break;
             }
-            if (cards[i].getNumber() - cards[i+1].getNumber() == -1) {
-                if (straightCounter == 0) {
+            if (cards[i].getNumber() - cards[i+1].getNumber() === -1) {
+                if (straightCounter === 0) {
                     topOfStraight = cards[i+1];
                     topIndex = i + 1;
                 }
                 straightCounter++;
-            } else if(cards[i].getNumber() == cards[i+1].getNumber()) {
+            } else if(cards[i].getNumber() === cards[i+1].getNumber()) {
                 //skip
             } else {
                 straightCounter = 0;
             }
-            if (straightCounter == 3 && cards[i].getNumber() == 2 && aceExists) {
+            if (straightCounter === 3 && cards[i].getNumber() === 2 && aceExists) {
                 wheel = true;
                 isStraight = true;
                 break;
             }
         }
         
-        if(straightCounter == 4) {
+        if(straightCounter === 4) {
             isStraight = true;
         }
         
@@ -278,15 +277,15 @@ class HandEvaluator{
 
                 for(let i = topIndex; i > 0; i--) {
                     straight[b--] = cards[i];
-                    if (b == 0) break;
-                    if (straight[b+1].getNumber() == cards[i-1].getNumber()) i--;
+                    if (b === 0) break;
+                    if (straight[b+1].getNumber() === cards[i-1].getNumber()) i--;
                 }
             } else {
             
                 for(let i = topIndex; i >= 0; i--) {
                     straight[b++] = cards[i];
-                    if(b == 5) break;
-                    if(straight[b-1].getNumber() == cards[i-1].getNumber()) i--;
+                    if(b === 5) break;
+                    if(straight[b-1].getNumber() === cards[i-1].getNumber()) i--;
                 }
             }
             straightNumber = 4 + topOfStraight.getNumber() * tenNegTwo;
@@ -309,9 +308,9 @@ class HandEvaluator{
             currentSuit = suits[i];
             flushCount = 0;
             for(let k = 0; k < cards.length; k++) {
-                if(cards[k].getSuit() == currentSuit) {
+                if(cards[k].getSuit() === currentSuit) {
                     flushCount++;
-                    if(flushCount == 5) {
+                    if(flushCount === 5) {
                         isFlush = true;
                         break;
                     }
@@ -321,10 +320,10 @@ class HandEvaluator{
                 flush = [];
                 let flushArrayCounter = 0;
                 for(let b = cards.length - 1; b >= 0; b--) {
-                    if(cards[b].getSuit() == currentSuit) {
+                    if(cards[b].getSuit() === currentSuit) {
                         flush[flushArrayCounter++] = cards[b];
                     }
-                    if(flushArrayCounter == 5) break;
+                    if(flushArrayCounter === 5) break;
                 }
                 flushNumber = 5 + flush[0].getNumber() * tenNegTwo + flush[1].getNumber() * tenNegFour + flush[2].getNumber() * tenNegSix + flush[3].getNumber() * tenNegEight + flush[4].getNumber() * tenNegTen;
                 break;
@@ -342,9 +341,9 @@ class HandEvaluator{
         let tripNumber = 0;
         
         for(let i = cards.length - 2; i >= 0; i--) {
-            if (cards[i+1].getNumber() == cards[i].getNumber()) {
+            if (cards[i+1].getNumber() === cards[i].getNumber()) {
                 tripCheck++;
-                if(tripCheck == 2) {
+                if(tripCheck === 2) {
                     trips = true;
                     tripNumber = cards[i].getNumber();
                     break;
@@ -360,7 +359,7 @@ class HandEvaluator{
         
         if (trips) {
             for(let i = cards.length - 2; i >= 0; i--) {
-                if(cards[i].getNumber() != tripNumber && cards[i+1].getNumber() == cards[i].getNumber()) {
+                if(cards[i].getNumber() != tripNumber && cards[i+1].getNumber() === cards[i].getNumber()) {
                     house = true;
                     pairNumber = cards[i].getNumber();
                 }
@@ -373,10 +372,10 @@ class HandEvaluator{
             let tripCount = 0;
             let pairCount = 3;
             for(let i = 0; i < cards.length; i++) {
-                if(cards[i].getNumber() == tripNumber) {
+                if(cards[i].getNumber() === tripNumber) {
                     House[tripCount++] = cards[i];
                 }
-                if(cards[i].getNumber() == pairNumber) {
+                if(cards[i].getNumber() === pairNumber) {
                     House[pairCount++] = cards[i];
                 }
             }
@@ -395,9 +394,9 @@ class HandEvaluator{
         let Quads;
 
         for(let i = cards.length - 2; i >= 0; i--) {
-            if(cards[i+1].getNumber() == cards[i].getNumber()) {
+            if(cards[i+1].getNumber() === cards[i].getNumber()) {
                 quadCount++;
-                if(quadCount == 3) {
+                if(quadCount === 3) {
                     hasQuads = true;
                     quadCard = cards[i].getNumber();
                     break;
@@ -414,7 +413,7 @@ class HandEvaluator{
             let highCard = new Card('s', 0);
             Quads = [];
             for(let i = cards.length - 1; i >= 0; i--) {
-                if(cards[i].getNumber() == quadCard) {
+                if(cards[i].getNumber() === quadCard) {
                     Quads[arrCounter++] = cards[i];
                 } else if (cards[i].getNumber() > highCard.getNumber()) {
                     highCard = cards[i];
@@ -439,7 +438,7 @@ class HandEvaluator{
             let currSuit = suits[i];
             flushCount = 0;
             for(let k = 0; k < cards.length; k++) {
-                if (cards[k].getSuit() == currSuit) {
+                if (cards[k].getSuit() === currSuit) {
                     flushCount++;
                 }
             }
@@ -457,7 +456,7 @@ class HandEvaluator{
             let p = 0;
             for(let k = 0; k < cards.length; k++) {
                 
-                if (cards[k].getSuit() == flushSuit) {
+                if (cards[k].getSuit() === flushSuit) {
                     cardsOfFlushSuit[p++] = cards[k];
                 }
             }
@@ -471,32 +470,32 @@ class HandEvaluator{
             let topIndex = 0;
 
             for(let i = cardsOfFlushSuit.length - 2; i >= 0; i--) {
-                if (cards[cards.length -1].getNumber() == 14) {
+                if (cards[cards.length -1].getNumber() === 14) {
                     aceExists = true;
                     acePosition = cards.length -1;
                 }
-                if (straightCounter == 4) {
+                if (straightCounter === 4) {
                     isStraight = true;
                     break;
                 }
-                if (cardsOfFlushSuit[i].getNumber() - cardsOfFlushSuit[i +1].getNumber() == -1) {
-                    if (straightCounter == 0) {
+                if (cardsOfFlushSuit[i].getNumber() - cardsOfFlushSuit[i +1].getNumber() === -1) {
+                    if (straightCounter === 0) {
                         topOfStraight = cardsOfFlushSuit[i+1];
                         topIndex = i + 1;
                     }
                     straightCounter++;
-                } else if (cardsOfFlushSuit[i].getNumber() == cardsOfFlushSuit[i+1].getNumber()) {
+                } else if (cardsOfFlushSuit[i].getNumber() === cardsOfFlushSuit[i+1].getNumber()) {
                     //Skip 
                 } else {
                     straightCounter = 0;
                 }
-                if (straightCounter == 3 && cards[i].getNumber() == 2 && aceExists) {
+                if (straightCounter === 3 && cards[i].getNumber() === 2 && aceExists) {
                     wheel = true;
                     isStraight = true;
                     break;
                 }
             }
-            if (straightCounter == 4) {
+            if (straightCounter === 4) {
                 isStraight = true;
             }
             if (isStraight) {
@@ -508,14 +507,14 @@ class HandEvaluator{
                     straight[0] = cards[acePosition];
                     for(let i = topIndex; i > 0; i--) {
                         straight[b--] = cards[i];
-                        if (b == 0)break;
-                        if (straight[b +1].getNumber() == cards[i -1].getNumber()) i--;
+                        if (b === 0)break;
+                        if (straight[b +1].getNumber() === cards[i -1].getNumber()) i--;
                     }
                 } else {
                     for(let i = topIndex; i >= 0; i--) {
                         straight[b++] = cardsOfFlushSuit[i];
-                        if (b == 5) break;
-                        if(straight[b -1].getNumber() == cardsOfFlushSuit[i -1].getNumber()) i--;
+                        if (b === 5) break;
+                        if(straight[b -1].getNumber() === cardsOfFlushSuit[i -1].getNumber()) i--;
                     }
                 }
                 straightFlushNumber = 8 + topOfStraight.getNumber() * tenNegTwo;
@@ -559,7 +558,7 @@ class HandEvaluator{
     }
 
     evaluateHandForString(hand) {
-        if (this.cardsOnBoard.length == 0) {
+        if (this.cardsOnBoard.length === 0) {
             if (hand[0].getNumber() > hand[1].getNumber()) {
                 return "High Card: " + hand[0].cardToString() + ", " + hand[1].cardToString();
             } else if (hand[0].getNumber() < hand[1].getNumber()) {

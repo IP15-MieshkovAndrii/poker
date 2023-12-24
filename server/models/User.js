@@ -1,25 +1,30 @@
-const mongoose = require('mongoose');
 
-const roomSchema = new mongoose.Schema({
+
+const { Sequelize, DataTypes } = require('sequelize');
+
+const User = Sequelize.define('User', {
+    id: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
+      },
     nickname: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
-
     roomID: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
     chips: {
-        type: Number,
-        default: 1000,
+        type: DataTypes.INTEGER,
+        defaultValue: 1000,
     },
     image: {
-        type: String,
-        default: './img/user.png',
-    }
+        type: DataTypes.STRING,
+        defaultValue: './img/user.png',
+    },
 });
-
-const User = mongoose.model('User', roomSchema);
 
 module.exports = User;

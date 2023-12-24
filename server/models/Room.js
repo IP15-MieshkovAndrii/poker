@@ -1,17 +1,18 @@
-const mongoose = require('mongoose');
+// models/room.js
+const { Sequelize, DataTypes } = require('sequelize');
 
-const roomSchema = new mongoose.Schema({
+const Room = Sequelize.define('Room', {
     id: {
-        type: String,
-        required: true,
-        unique: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        primaryKey: true,
     },
+    
     hostName: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
     },
 });
-
-const Room = mongoose.model('Room', roomSchema);
 
 module.exports = Room;

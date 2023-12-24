@@ -1,49 +1,27 @@
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose')
-const connectDB = require('./config/dbConn')
 const http = require('http')
 const WebSocket = require('ws');
 const socketHandler = require('./sockets/socketHandler');
-
+const router = require('./routes/router')
 require('dotenv').config();
 
-const app = express();
+const port = process.env.PORT || 3000;
+const hostname = process.env.HOSTNAME || '127.0.0.1'
 
-const PORT = process.env.PORT || 3000;
-const socketPort = process.env.SOCKET_PORT || 8000;
-
-const httpServer = http.createServer(app)
-const wsServer = new WebSocket.Server({ port: socketPort });
-
-connectDB();
-
-app.use(cors({
-  origin: true,
-  credentials: true,
-}));
-app.use(express.json());
-
-app.use('/rooms', require('./routes/rooms'));
-
-
-mongoose.connection.once('open', () => {
-  console.log('Connected to MongoDB')
-}).on('error', (error) => {
-  console.error('MongoDB connection error:', error);
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end(`${router({ req, res })}`)
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+server.listen(port, hostname, () => {
+  console.log(`Server running at http://${hostname}:${port}/`)
 });
 
-
-httpServer.on('upgrade', (request, socket, head) => {
-  wsServer.handleUpgrade(request, socket, head, (ws) => {
-    wsServer.emit('connection', ws, request);
-  });
+server.on('error', err => {
+  if (err.code === 'EACCES') {
+    console.log(`No access to port: ${port}`);
+  }
 });
 
+const ws = new WebSocket.Server({ server });
 
-
-socketHandler(wsServer);
+socketHandler(ws);

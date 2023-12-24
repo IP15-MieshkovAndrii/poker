@@ -1,4 +1,3 @@
-const WebSocket = require('ws');
 const Sockets = require('../utils/sockets');
 const PokerTable = require('../game/PokerTable')
 const PokerPlayer =require('../game/PokerPlayer')
@@ -109,7 +108,7 @@ const socketHandler = (ws) => {
           bigBlind = players[currentPlayer].blind(bigBlind);
           pokerTable.changePot(bigBlind);
 
-          currentPlayer = pokerTable.nextPlayer(currentPlayer);
+          pokerTable.nextPlayer(currentPlayer);
 
           pokerTable.newHands();
 
