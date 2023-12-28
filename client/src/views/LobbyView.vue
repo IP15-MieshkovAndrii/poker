@@ -4,117 +4,110 @@
       <h1>Welcome to the SuperPoker!</h1>
   
       <form>
-        <label for="nickname">Enter Nickname:</label>
-        <input v-model="nickname" type="text" required placeholder="Enter nickname" />
-      </form>
-  
-      <form>
         <label for="roomID">Room ID:</label>
         <input v-model="roomID" type="text" placeholder="Enter room name" />
       </form>
 
       <div class="inputGroup">
         <form @submit.prevent="joinRoom">
-          <button type="submit" :disabled="(nickname === '')||(roomID === '')">Join Game</button>
+          <button type="submit" :disabled="isDisabled">Join Game</button>
         </form>
         <form @submit.prevent="createRoom">
-          <button type="submit" :disabled="(nickname === '')">Create Game</button>
+          <button type="submit" :disabled="isCreateDisabled">Create Game</button>
         </form>
       </div>
 
     </div>
   </template>
-  
-  <script>
-  import * as api from '../apiClient';
+<script setup>
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import * as api from '../apiClient';
+import { computed, ref} from 'vue';
+import router from '@/router/router';
 
-  export default {
-    name: 'LobbyView',
-    data() {
-      return {
-        roomID: '',
-        nickname: '',
-      };
-    },
-    methods: {
-      async createRoom() {
+const auth = getAuth();
+const isLoggedIn = ref(false);
+let roomID = ref('');
+let userName = ref('');
 
-        console.log('Creating room:', this.nickname);
-        try {
-          const response = await api.createRoom({
-            hostName: this.nickname,
-          });
-          if(response.status === 201){
-            sessionStorage.setItem('nickname', this.nickname);
-            this.$router.push({ name: 'BoardView', params: { id: response.data.id } });
-            
-          }
-  
-        } catch (error) {
-          console.error('Error creating room:', error);
-        }
-      },
-
-
-      async joinRoom() {
-        try {
-          const response = await api.getRoom({
-              roomID: this.roomID,
-              nickname: this.nickname,
-            });
-          if(response.status === 200){
-            sessionStorage.setItem('nickname', this.nickname);
-            this.$router.push({ name: 'BoardView', params: { id: this.roomID } });
-
-          }
-  
-        } catch (error) {
-          console.error('Error creating room:', error);
-        }
-
-      },
-    },
-  };
-  </script>
-  
-  <style scoped>
-  .lobby {
-    padding: 20px;
-    background-color: rgb(174, 197, 174);
-    display: flex;
-    align-items: center;
-    flex-direction: column;
+onAuthStateChanged(auth, (user) => {
+  isLoggedIn.value = !!user;
+  if (user) {
+    userName.value = user.displayName
   }
-  
-  form {
-    margin-bottom: 10px;
-    width: 30vw;
-  }
-  
-  .inputGroup {
-    display: flex;
-    justify-content: space-between;
-    width: 30vw;
-    gap: 3vw;
-    margin-top: 1.5em;
-  }
+});
 
-  
-  label {
-    display: block;
-    margin-bottom: 5px;
+const isDisabled = computed(() => !isLoggedIn.value || roomID.value === '');
+const isCreateDisabled = computed(() => !isLoggedIn.value);
+
+const createRoom = async () => {
+  console.log('Creating room:', roomID.value);
+  try {
+    const {id, response} = await api.createRoom({
+      hostName: userName.value,
+    });
+    if (response && response.status === 201) {
+      router.push({ name: 'BoardView', params: { id: id.id } });
+    }
+  } catch (error) {
+    console.error('Error creating room:', error);
   }
-  
-  input {
-    width: calc(100% - 8px);
-    height: 2vw;
+};
+
+const joinRoom = async () => {
+  try {
+    const response = await api.getRoom({
+      roomID: roomID.value,
+      nickname: roomID.value,
+    });
+    if (response.status === 200) {
+      sessionStorage.setItem('nickname', roomID.value);
+      router.push({ name: 'BoardView', params: { id: roomID.value } });
+    }
+  } catch (error) {
+    console.error('Error creating room:', error);
   }
+};
+</script>
   
-  button {
-    width: 100%;
-    height: calc(4vw + 12px);
-    font-size: 2vw;
-  }
-  </style>
+<style scoped>
+.lobby {
+  padding: 20px;
+  background-color: rgb(174, 197, 174);
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+form {
+  margin-bottom: 10px;
+  width: 30vw;
+}
+
+.inputGroup {
+  display: flex;
+  justify-content: space-between;
+  width: 30vw;
+  gap: 3vw;
+  margin-top: 1.5em;
+}
+
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input {
+  width: calc(100% - 8px);
+  height: 2vw;
+}
+
+button {
+  width: 100%;
+  height: calc(4vw + 12px);
+  font-size: 2vw;
+}
+</style>
   
   

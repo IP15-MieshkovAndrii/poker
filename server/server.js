@@ -8,8 +8,8 @@ const port = process.env.PORT || 3000;
 const hostname = process.env.HOSTNAME || '127.0.0.1'
 
 const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end(`${router({ req, res })}`)
+
+  router(req, res);
 });
 
 server.listen(port, hostname, () => {

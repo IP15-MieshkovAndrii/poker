@@ -1,30 +1,28 @@
 const { v4: uuidv4 } = require('uuid');
-const { Room, User } = require('../models/db');
+const { respondWithJSON, respondWithError } = require('../routes/responses');
+
+
 
 exports.createRoom = async (req, res) => {
-  try {
-    const { hostName } = req.body;
+  let data = '';
+      
+  req.on('data', (chunk) => {
+      data += chunk;
+  });
 
-    if (!hostName) {
-      return res.status(400).json({ error: 'All fields are required.' });
+  req.on('end', () => {
+    try {
+
+        const { hostName } = JSON.parse(data);
+        if (!hostName) {
+            return respondWithError(res, 400, 'Need host!');
+        }
+        let id = uuidv4();
+        respondWithJSON(res, 201, {id});
+    } catch (error) {
+        return respondWithError(res, 500, 'Internal Server Error');
     }
-
-    let id = uuidv4();
-    let existingRoom = await Room.findOne({ where: { id } });
-    while (existingRoom) {
-      id = uuidv4();
-      existingRoom = await Room.findOne({ where: { id } });
-    }
-
-    const newRoom = await Room.create({ id, hostName });
-    const newUser = await User.create({ nickname: hostName, roomID: id });
-
-    res.status(201).json({ id, newUser });
-
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Internal Server Error');
-  }
+  });
 };
 
 exports.checkRoom = async (req, res) => {

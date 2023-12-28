@@ -85,8 +85,7 @@
         const provider = new GoogleAuthProvider();
         signInWithPopup(getAuth(), provider)
             .then((result) => {
-                console.log(result.user);
-                router.push("/profile");
+                if(result)router.push("/profile");
             })
             .catch((error) => {
                 console.log(error.code);
