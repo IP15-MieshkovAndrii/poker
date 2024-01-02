@@ -1,28 +1,20 @@
-// const { Sequelize, DataTypes } = require('sequelize');
-// const RoomModel = require('../models/Room');
-// const UserModel = require('../models/User');
+const Sequelize = require("sequelize");
+require('dotenv').config();
 
-// const sequelize = new Sequelize({
-//   dialect: 'mysql',
-//   host: '127.0.0.1',
-//   username: 'Andrii',
-//   password: 'Andrii',
-//   database: 'Poker',
-// });
+const username = process.env.DATABASE_USERNAME;
+const password = process.env.DATABASE_PASSWORD;
+const host = process.env.DATABASE_HOST;
+const port = process.env.DATABASE_PORT;
 
-// const Room = RoomModel(sequelize, DataTypes);
-// const User = UserModel(sequelize, DataTypes);
+const sequelize = new Sequelize(
+    'Poker',
+    username,
+    password,
+    {
+        host,
+        port,
+        dialect: 'mysql'
+    }
+);
 
-
-// Room.hasMany(User, { foreignKey: 'roomID' });
-// User.belongsTo(Room, { foreignKey: 'roomID' });
-
-// sequelize.authenticate()
-//   .then(() => {
-//     console.log('Database synchronized');
-//   })
-//   .catch((err) => {
-//     console.error('Error synchronizing the database:', err);
-//   });
-
-// module.exports = { Room, User, sequelize};
+module.exports = sequelize;

@@ -81,7 +81,7 @@
           id: this.$route.params.id || '',
           isIDVisible: false,
           playerName: sessionStorage.getItem('nickname') || 'Name',
-          socket: new WebSocket('ws://127.0.0.1:8000/game'),
+          socket: new WebSocket('ws://127.0.0.1:3000/game'),
           otherPlayers: [],
           hostName: this.getHost() || '',
           gameStarted: JSON.parse(sessionStorage.getItem('game'))?.gameStarted || false,

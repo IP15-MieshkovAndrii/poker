@@ -19,19 +19,21 @@ export const createRoom = async (data) => {
     }
 };
 
-export const getRoom = async (data) => {
+export const joinRoom = async (data) => {
     try {
-        const response = await fetch('http://localhost:3000/rooms/data', {
+        const response = await fetch('http://localhost:3000/room/user', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain',
             },
+            mode: "cors",
             body: JSON.stringify({
                 roomID: data.roomID,
-                nickname: data.nickname,
+                userID: data.userID,
             }),
+            referrerPolicy: "no-referrer"
         });
-        return response.json();
+        return response;
     } catch (error) {
         console.error('Error', error);
     }
@@ -42,7 +44,7 @@ export const getHost = async (data) => {
         const response = await fetch('http://localhost:3000/rooms/hostname', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain',
             },
             body: JSON.stringify({
                 id: data.id,

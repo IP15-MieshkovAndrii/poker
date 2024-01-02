@@ -28,12 +28,12 @@ import router from '@/router/router';
 const auth = getAuth();
 const isLoggedIn = ref(false);
 let roomID = ref('');
-let userName = ref('');
+let userID = ref('');
 
 onAuthStateChanged(auth, (user) => {
   isLoggedIn.value = !!user;
   if (user) {
-    userName.value = user.displayName
+    userID.value = user.uid
   }
 });
 
@@ -44,7 +44,7 @@ const createRoom = async () => {
   console.log('Creating room:', roomID.value);
   try {
     const {id, response} = await api.createRoom({
-      hostName: userName.value,
+      hostName: userID.value,
     });
     if (response && response.status === 201) {
       router.push({ name: 'BoardView', params: { id: id.id } });
@@ -56,12 +56,11 @@ const createRoom = async () => {
 
 const joinRoom = async () => {
   try {
-    const response = await api.getRoom({
+    const response = await api.joinRoom({
       roomID: roomID.value,
-      nickname: roomID.value,
+      userID: userID.value,
     });
-    if (response.status === 200) {
-      sessionStorage.setItem('nickname', roomID.value);
+    if (response && response.status === 200) {
       router.push({ name: 'BoardView', params: { id: roomID.value } });
     }
   } catch (error) {

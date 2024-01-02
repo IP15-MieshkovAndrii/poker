@@ -1,6 +1,5 @@
-// route.js
-const roomController = require('../controllers/roomController');
-const { respondWithJSON, responseNotFound, respondWithError } = require('./responses');
+const roomController = require('../controllers/room.controller');
+const { respondWithJSON, responseWithText, respondWithError } = require('./responses');
 
 
 function router(req, res) {
@@ -15,16 +14,16 @@ function router(req, res) {
       }
       break;
 
-    case '/room/data':
-      if (req.method === 'GET') {
-        roomController.checkRoom(req, res);
+    case '/room/user':
+      if (req.method === 'POST') {
+        roomController.joinRoom(req, res);
       } else {
-        respondWithError(res, 405, 'Invalid method for /room/data');
+        respondWithError(res, 405, 'Invalid method for /room/user');
       }
       break;
 
     case '/room/hostname':
-      if (req.method === 'GET') {
+      if (req.method === 'POST') {
         roomController.getHost(req, res);
       } else {
         respondWithError(res, 405, 'Invalid method for /room/hostname');
@@ -50,7 +49,7 @@ function router(req, res) {
       }
       break;
     default:
-      responseNotFound(res, 200, 'Not Found');
+      responseWithText(res, 200, 'Not Found');
   }
 }
 

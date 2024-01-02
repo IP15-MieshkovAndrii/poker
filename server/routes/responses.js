@@ -8,7 +8,7 @@ function respondWithError(res, statusCode, errorMessage) {
     res.end(JSON.stringify({ error: errorMessage }));
 }
 
-function responseNotFound(res, statusCode, text) {
+function responseWithText(res, statusCode, text) {
     res.writeHead(statusCode, getCommonHeaders());
     res.end(text);
 }
@@ -27,6 +27,6 @@ function getCommonHeaders() {
 module.exports = {
     respondWithJSON,
     respondWithError,
-    responseNotFound,
+    responseWithText,
     getCommonHeaders,
 };  
